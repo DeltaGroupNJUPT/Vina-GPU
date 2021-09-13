@@ -1,0 +1,12 @@
+receptor = ./2bm2_protein.pdbqt
+ligand =  ./2bm2_ligand.pdbqt
+center_x = 40.415
+center_y = 110.986
+center_z = 82.673
+size_x = 24.0
+size_y = 26.25
+size_z = 22.5
+exhaustiveness = 1
+cpu = 1
+e = 1000
+search_depth = 50
