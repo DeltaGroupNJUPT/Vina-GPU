@@ -8,5 +8,5 @@ size_y = 26.25
 size_z = 22.5
 exhaustiveness = 1
 cpu = 1
-e = 1000
+thread = 1000
 search_depth = 50

@@ -451,7 +451,7 @@ Thank you!\n";
 		int cpu = 1, seed, exhaustiveness = 8, verbosity = 2, num_modes = 9;
 		fl energy_range = 2.0;
 		int search_depth = 0; // 20210811 Glinttsd
-		int e = 0;
+		int thread = 0;
 
 		// -0.035579, -0.005156, 0.840245, -0.035069, -0.587439, 0.05846
 		fl weight_gauss1 = -0.035579;
@@ -488,7 +488,7 @@ Thank you!\n";
 			;
 		options_description advanced("Advanced options (see the manual)");
 		advanced.add_options()
-			("e", value<int>(&e), "the number of parallelism in monte carlo") // 20210811 Glinttsd
+			("thread", value<int>(&thread), "the number of computing lanes in VINA-GPU") // 20210811 Glinttsd
 			("search_depth", value<int>(&search_depth), "the number of search depth in monte carlo") // 20210811 Glinttsd
 			("score_only", bool_switch(&score_only), "score only - search space can be omitted")
 			("local_only", bool_switch(&local_only), "do local search only")
@@ -677,7 +677,7 @@ Thank you!\n";
 			score_only, local_only, randomize_only, false, // no_cache == false
 			gd, exhaustiveness,
 			weights,
-			cpu, seed, verbosity, max_modes_sz, energy_range, log, search_depth, e);
+			cpu, seed, verbosity, max_modes_sz, energy_range, log, search_depth, thread);
 	}
 	catch (file_error& e) {
 		std::cerr << "\n\nError: could not open \"" << e.name.string() << "\" for " << (e.in ? "reading" : "writing") << ".\n";
