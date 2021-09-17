@@ -1,5 +1,5 @@
 # VINA-GPU
-An heterogeneous OpenCL implementation of AutoDock Vina
+A heterogeneous OpenCL implementation of AutoDock Vina
 
 ## Usage
 ### from executable file
