@@ -63,7 +63,7 @@ struct monte_carlo {
 	fl mutation_amplitude;
 	ssd ssd_par;
 
-	int e; //parallelism 20210813 Glinttsd
+	int thread; //parallelism 20210917 Glinttsd
 	int search_depth; // 20210813 Glinttsd
 
 	monte_carlo() : num_steps(2500), temperature(1.2), hunt_cap(10, 1.5, 10), min_rmsd(0.5), num_saved_mins(50), mutation_amplitude(2) {} // T = 600K, R = 2cal/(K*mol) -> temperature = RT = 1.2;  num_steps = 50*lig_atoms = 2500

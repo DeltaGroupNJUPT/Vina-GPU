@@ -27,10 +27,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #define COMMON_MACROS_H
 #define _CRT_SECURE_NO_WARNINGS
 #define CL_USE_DEPRECATED_OPENCL_3_0_APIS
-#ifndef OPENCL_VERSION
-#define OPENCL_VERSION
-#endif // !OPENCL_VERSION
-//#define OPENCL_TEST
+
+#define OPENCL_PART_1
+#define OPENCL_PART_2
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>

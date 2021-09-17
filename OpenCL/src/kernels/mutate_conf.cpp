@@ -66,7 +66,7 @@ inline void normalize_angle(float* x) {
 			*x += 2 * (M_PI);
 		}
 		else {
-			printf("\n kernel2: normalize_angle() ERROR! x = %f M_PI = %f", *x,M_PI);
+			//printf("\n kernel2: normalize_angle() ERROR! x = %f M_PI = %f", *x,M_PI);
 			break;
 		}
 	}

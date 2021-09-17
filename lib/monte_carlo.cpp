@@ -32,8 +32,7 @@
 
 #include <fstream>
 
-#define OPENCL_TEST
-//#define ORIGIN_TEST
+//#define DISPLAY_ANALYSIS
 //#define DATA_DISTRIBUTION_TEST
 output_type monte_carlo::operator()(model& m, const precalculate& p, const igrid& ig, const precalculate& p_widened, const igrid& ig_widened, const vec& corner1, const vec& corner2, incrementable* increment_me, rng& generator) const {
 	output_container tmp;
@@ -123,7 +122,7 @@ void monte_carlo::generate_uniform_position(const vec corner1, const vec corner2
 	assert(counter == exhaustiveness);
 }
 
-#ifdef ORIGIN_TEST
+#ifndef OPENCL_PART_2
 // out is sorted
 void monte_carlo::operator()(model& m, output_container& out, const precalculate& p, const igrid& ig, const precalculate& p_widened, const igrid& ig_widened, const vec& corner1, const vec& corner2, incrementable* increment_me, rng& generator) const {
 	vec authentic_v(1000, 1000, 1000); // FIXME? this is here to avoid max_fl/max_fl
@@ -181,8 +180,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	VINA_CHECK(!out.empty());
 	VINA_CHECK(out.front().e <= out.back().e); // make sure the sorting worked in the correct order
 }
-#endif // ORIGIN_TEST
-#ifdef OPENCL_TEST
+#else
 void monte_carlo::operator()(model& m, output_container& out, const precalculate& p, const igrid& ig, const precalculate& p_widened, const igrid& ig_widened, const vec& corner1, const vec& corner2, incrementable* increment_me, rng& generator) const {
 	/**************************************************************************/
 	/***************************    OpenCL Init    ****************************/
@@ -192,9 +190,10 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	cl_device_id* devices;
 	cl_context context;
 	cl_command_queue queue;
-	SetupPlatform(&platforms);
-	SetupDevice(platforms, &devices);
-	SetupContext(platforms, devices, &context, 1);
+	cl_int gpu_platform_id = 0;
+	SetupPlatform(&platforms, &gpu_platform_id);
+	SetupDevice(platforms, &devices, gpu_platform_id);
+	SetupContext(platforms, devices, &context, 1, gpu_platform_id);
 	SetupQueue(&queue, context, devices);
 	char* program_file;
 	cl_program program_cl;
@@ -202,42 +201,41 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	size_t program_size;
 	//Read kernel source code
 	
-	//const std::string default_work_path = "D:/VScode_Project/AutoDock_vina_Opencl_float";
-	//const std::string default_work_path = "C:/Users/vipuser/Desktop/test";
-	const std::string default_work_path = ".";
-	const std::string include_path = default_work_path + "/OpenCL/inc"; //FIX it
-	const std::string addtion = "";
+	////const std::string default_work_path = "D:/VScode_Project/AutoDock_vina_Opencl_float";
+	////const std::string default_work_path = "C:/Users/vipuser/Desktop/test";
+	//const std::string default_work_path = ".";
+	//const std::string include_path = default_work_path + "/OpenCL/inc"; //FIX it
+	//const std::string addtion = "";
 
-	//read_file(&program_file, &program_size, default_work_path + "/OpenCL/src/kernels/kernel2.cl");
-	//program_cl = clCreateProgramWithSource(context, 1, (const char**)&program_file, &program_size, &err); checkErr(err);
-	
-	char* program_file_n[NUM_OF_FILES];
-	size_t program_size_n[NUM_OF_FILES];
-	std::string file_paths[NUM_OF_FILES] = {	default_work_path + "/OpenCL/src/kernels/code_head.cpp",
-												default_work_path + "/OpenCL/src/kernels/mutate_conf.cpp",
-												default_work_path + "/OpenCL/src/kernels/matrix.cpp",
-												default_work_path + "/OpenCL/src/kernels/quasi_newton.cpp",
-												default_work_path + "/OpenCL/src/kernels/kernel2.cl"}; // The order of files is important!
+	////read_file(&program_file, &program_size, default_work_path + "/OpenCL/src/kernels/kernel2.cl");
+	////program_cl = clCreateProgramWithSource(context, 1, (const char**)&program_file, &program_size, &err); checkErr(err);
+	//
+	//char* program_file_n[NUM_OF_FILES];
+	//size_t program_size_n[NUM_OF_FILES];
+	//std::string file_paths[NUM_OF_FILES] = {	default_work_path + "/OpenCL/src/kernels/code_head.cpp",
+	//											default_work_path + "/OpenCL/src/kernels/mutate_conf.cpp",
+	//											default_work_path + "/OpenCL/src/kernels/matrix.cpp",
+	//											default_work_path + "/OpenCL/src/kernels/quasi_newton.cpp",
+	//											default_work_path + "/OpenCL/src/kernels/kernel2.cl"}; // The order of files is important!
 
-	read_n_file(program_file_n, program_size_n, file_paths, NUM_OF_FILES);
-	std::string final_file;
-	size_t final_size = NUM_OF_FILES - 1; // count '\n'
-	for (int i = 0; i < NUM_OF_FILES; i++) {
-		if (i == 0) final_file = program_file_n[0];
-		else final_file = final_file + '\n' + (std::string)program_file_n[i];
-		final_size += program_size_n[i];
-	}
-	const char* final_files_char = final_file.data();
+	//read_n_file(program_file_n, program_size_n, file_paths, NUM_OF_FILES);
+	//std::string final_file;
+	//size_t final_size = NUM_OF_FILES - 1; // count '\n'
+	//for (int i = 0; i < NUM_OF_FILES; i++) {
+	//	if (i == 0) final_file = program_file_n[0];
+	//	else final_file = final_file + '\n' + (std::string)program_file_n[i];
+	//	final_size += program_size_n[i];
+	//}
+	//const char* final_files_char = final_file.data();
 
-	program_cl = clCreateProgramWithSource(context, 1, (const char**)&final_files_char, &final_size, &err); checkErr(err);
-	SetupBuildProgramWithSource(program_cl, NULL, devices, include_path, addtion);
-
-	SaveProgramToBinary(program_cl, "Kernel2_Opt.bin");
+	//program_cl = clCreateProgramWithSource(context, 1, (const char**)&final_files_char, &final_size, &err); checkErr(err);
+	//SetupBuildProgramWithSource(program_cl, NULL, devices, include_path, addtion);
+	//SaveProgramToBinary(program_cl, "Kernel2_Opt.bin");
 	
 	
 	program_cl = SetupBuildProgramWithBinary(context, devices, "Kernel2_Opt.bin");
 
-	err = clUnloadPlatformCompiler(platforms[PLATFORM_CHOOSE]); checkErr(err);
+	err = clUnloadPlatformCompiler(platforms[gpu_platform_id]); checkErr(err);
 	//Set kernel arguments
 	cl_kernel kernels[1];
 	char kernel_name[][50] = { "kernel2" };
@@ -252,10 +250,10 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	/*********    Generate random seeds (depend on exhaustiveness)    *********/
 	/**************************************************************************/
 	int control = 1;
-	int exhaustiveness = e; // user-define
+	//int exhaustiveness = thread; // user-define
 
 	std::vector<rng> generator_vec;
-	for (int i = 0; i < exhaustiveness; i++) {
+	for (int i = 0; i < thread; i++) {
 		int seed = random_int(0, 1000000, generator);
 		rng generator_tmp(static_cast<rng::result_type>(seed));
 		generator_vec.push_back(generator_tmp);
@@ -431,13 +429,13 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 
 	// Generating exhaustiveness random ligand structures
 	std::vector<output_type_cl> rand_molec_struc_vec; 
-	rand_molec_struc_vec.resize(exhaustiveness);
+	rand_molec_struc_vec.resize(thread);
 	int lig_torsion_size = tmp.c.ligands[0].torsions.size();
 	int flex_torsion_size; if (tmp.c.flex.size() != 0) flex_torsion_size = tmp.c.flex[0].torsions.size(); else flex_torsion_size = 0;
 	std::vector<vec> uniform_data;
-	uniform_data.resize(exhaustiveness);
+	uniform_data.resize(thread);
 	
-	for (int i = 0; i < exhaustiveness; i++) {
+	for (int i = 0; i < thread; i++) {
 		tmp.c.randomize(corner1, corner2, generator_vec[i]); // generate a random structure
 		//P用均匀划分
 		//generate_uniform_position(corner1, corner2, uniform_data, exhaustiveness);
@@ -509,8 +507,8 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	/**************************************************************************/
 
 	cl_mem rand_molec_struc_vec_gpu;
-	CreateDeviceBuffer(&rand_molec_struc_vec_gpu, CL_MEM_READ_ONLY, exhaustiveness * SIZE_OF_MOLEC_STRUC, context);
-	for (int i = 0; i < exhaustiveness; i++) {
+	CreateDeviceBuffer(&rand_molec_struc_vec_gpu, CL_MEM_READ_ONLY, thread* SIZE_OF_MOLEC_STRUC, context);
+	for (int i = 0; i < thread; i++) {
 		std::vector<float> pos(rand_molec_struc_vec[i].position, rand_molec_struc_vec[i].position + 3);
 		std::vector<float> ori(rand_molec_struc_vec[i].orientation, rand_molec_struc_vec[i].orientation + 4);
 		std::vector<float> lig_tor(rand_molec_struc_vec[i].lig_torsion, rand_molec_struc_vec[i].lig_torsion + MAX_NUM_OF_LIG_TORSION);
@@ -529,8 +527,8 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	}
 	
 	cl_mem best_e_gpu;
-	CreateDeviceBuffer(&best_e_gpu, CL_MEM_READ_WRITE, exhaustiveness * sizeof(float), context);
-	err = clEnqueueFillBuffer(queue, best_e_gpu, &max_fl, sizeof(float), 0, exhaustiveness * sizeof(float), 0, NULL, NULL); checkErr(err);
+	CreateDeviceBuffer(&best_e_gpu, CL_MEM_READ_WRITE, thread * sizeof(float), context);
+	err = clEnqueueFillBuffer(queue, best_e_gpu, &max_fl, sizeof(float), 0, thread * sizeof(float), 0, NULL, NULL); checkErr(err);
 
 	cl_mem rand_maps_gpu;
 	CreateDeviceBuffer(&rand_maps_gpu, CL_MEM_READ_ONLY, rand_maps_size, context);
@@ -561,7 +559,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 
 	// Preparing result data
 	cl_mem results;
-	CreateDeviceBuffer(&results, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, exhaustiveness * sizeof(output_type_cl), context);
+	CreateDeviceBuffer(&results, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, thread * sizeof(output_type_cl), context);
 	
 	clFinish(queue);
 
@@ -582,7 +580,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	SetKernelArg(kernels[0], 11, sizeof(cl_mem),	&authentic_v_gpu);
 	SetKernelArg(kernels[0], 12, sizeof(cl_mem),	&results);
 	SetKernelArg(kernels[0], 13, sizeof(int),		&search_depth);
-	SetKernelArg(kernels[0], 14, sizeof(int),		&e); 
+	SetKernelArg(kernels[0], 14, sizeof(int),		&thread); 
 	SetKernelArg(kernels[0], 15, sizeof(int),		&total_wi);
 	/**************************************************************************/
 	/****************************   Start kernel    ***************************/
@@ -597,17 +595,17 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 
 	// Maping result data
 	output_type_cl* result_ptr = (output_type_cl*)clEnqueueMapBuffer(queue, results, CL_TRUE, CL_MAP_READ, 
-																	0, exhaustiveness * sizeof(output_type_cl), 
+																	0, thread * sizeof(output_type_cl),
 																	0, NULL, NULL, &err); checkErr(err);
 
 	//output_type tmp_cpu;
-	std::vector<output_type> result_vina = cl_to_vina(result_ptr, exhaustiveness);
+	std::vector<output_type> result_vina = cl_to_vina(result_ptr, thread);
 
 	// Unmaping result data
 	err = clEnqueueUnmapMemObject(queue, results, result_ptr, 0, NULL, NULL); checkErr(err);
 
 	// Write back to vina
-	for (int i = 0; i < exhaustiveness; i++) {
+	for (int i = 0; i < thread; i++) {
 		add_to_output_container(out, result_vina[i], min_rmsd, num_saved_mins);
 	}
 	VINA_CHECK(!out.empty());
@@ -627,6 +625,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	err = clReleaseMemObject(authentic_v_gpu); checkErr(err);
 	err = clReleaseMemObject(results); checkErr(err);
 
+#ifdef DISPLAY_ANALYSIS
 	// Output Analysis
 	cl_ulong time_start, time_end;
 	double total_time;
@@ -650,6 +649,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	err = clGetKernelWorkGroupInfo(kernels[0], devices[0], CL_KERNEL_LOCAL_MEM_SIZE, sizeof(cl_ulong), &local_mem_size, NULL); checkErr(err);
 	printf("\n local mem used = %d Bytes", (int)local_mem_size);
 
-	printf("\n constant mem used = %0.3f MBytes \n", (double)(	p_cl_size + ig_cl_size + exhaustiveness * SIZE_OF_MOLEC_STRUC) / (1024 * 1024));
+	printf("\n constant mem used = %0.3f MBytes \n", (double)(	p_cl_size + ig_cl_size + thread * SIZE_OF_MOLEC_STRUC) / (1024 * 1024));
+#endif
 }
-#endif // OPENCL_TEST
+#endif // OPENCL_VERSION

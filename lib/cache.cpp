@@ -44,6 +44,7 @@
 
 //OpenCL Related
 #include "wrapcl.h"
+//#define DISPLAT_RUNTIME
 //end OpenCL Related
 /*
 	scoring_function_version=scoring_function_version_：string；
@@ -281,237 +282,6 @@ void cache::populate(const model& m, const precalculate& p, const szv& atom_type
 	}						//for(x=0;x<m_i;x++)结束
 }
 
-
-/*
-* Modified by Glinttsd
-* Populate funciton using GPU
-*/
-//void cache::populate_cl(const model& m, const precalculate& p, const szv& atom_types_needed, bool display_progress){
-//
-//	//OpenCL Init
-//	cl_int err;
-//	cl_platform_id* platforms;
-//	cl_device_id* devices;
-//	cl_context context;
-//	cl_command_queue queue;
-//	SetupPlatform(&platforms);
-//	SetupDevice(platforms, &devices);
-//	SetupContext(platforms, devices, &context, 1);
-//	SetupQueue(&queue, context, devices);
-//	char* program_file;
-//	cl_program program_cl;
-//	cl_program program;
-//	size_t program_size;
-//	//Read kernel code
-//	const std::string default_work_path = "D:/VScode_Project/AutoDock_vina_Opencl";
-//	const std::string include_path = default_work_path + "/OpenCL/inc" + " -I " + default_work_path + "/lib"; //FIX it
-//	const std::string addtion = " -D MAX_NUM_OF_EVERY_M_DATA_ELEMENT=512";
-//	read_file(&program_file, &program_size, default_work_path + "/OpenCL/src/kernels/kernel1.cl");
-//	program_cl = clCreateProgramWithSource(context, 1, (const char**)&program_file, &program_size, &err); checkErr(err);
-//	SetupBuildProgram(program_cl, NULL, devices, include_path, addtion);
-//	err = clUnloadPlatformCompiler(platforms[1]); checkErr(err);
-//	//Set kernel arguments
-//	cl_kernel kernels[KERNEL_1_NUM_OF_KERNELS];
-//	char kernel_name[][50] = {"kernel1"};
-//	SetupKernel(kernels, program_cl, KERNEL_1_NUM_OF_KERNELS, kernel_name);
-//	//end OpenCL Init
-//
-//	szv needed;                                     //unint向量
-//	VINA_FOR_IN(i, atom_types_needed) {            //for(i=0;i<atom_types_needed.size;i++)
-//		sz t = atom_types_needed[i];               //将atom_types_needed向量中的元素依次赋值给t
-//		if (!grids[t].initialized()) {              //grid结构体中三维double数组m_data的参数sz m_i, m_j, m_k同时>0则返回1  否则0
-//			needed.push_back(t);                   // needed向量末尾添加t
-//			grids[t].init(gd);                     //给grid结构体中的五个vec结构体赋值
-//		}
-//	}
-//
-//	if (needed.empty())                             //如果needed为空即上面grid结构体中三维double数组m_data的参数sz m_i, m_j, m_k同时>0
-//		return;                                    //函数返回空值 
-//												   //否则needed不为空
-//	flv affinities(needed.size());                 //double向量，和needed向量元素一样多
-//
-//	sz nat = num_atom_types(atu);				   //atu：atom_type结构体中的枚举型变量t，为EL型返回11，AD型返回20，XS型返回17，SY型返回18
-//
-//	grid& g = grids[needed.front()];               //needed.front()：返回needed第一个元素的引用
-//
-//	const fl cutoff_sqr = p.cutoff_sqr();          //等于precalculate结构体中的m_cutoff_sqr
-//
-//	grid_dims gd_reduced = szv_grid_dims(gd);      //gd：有3个元素的grid_dim结构体数组，给（grid_dims）tmp[i]的参数begin   end    n赋值  然后返回tmp
-//	szv_grid ig(m, gd_reduced, cutoff_sqr);        //给index[i]赋值    返回   m_data[index[0] + m_i*(index[1] + m_j*index[2])]      m_data是array3d<szv>类型       
-//
-//	//Check if ig.m_init and ig.m_range equal to g.m_init and g.m_range, 
-//	//if so, m_init and m_range can be used in kernel, otherwise, ig.m_init and ig.m_range need to be allocated 
-//	///这里将结构体szv_grid中的成员改为了public，可以直接访问
-//	for (int i = 0; i < 3; i++) {
-//		if (ig.m_init[i] != g.m_init[i]) {
-//			printf("m_init not equal!");
-//			exit(-1);
-//		}
-//		if (ig.m_range[i] != g.m_range[i]) {
-//			printf("m_range not equal!");
-//			exit(-1);
-//		}
-//	}
-//	//Allocate device memory
-//	int total_mem = 0;
-//	cl_mem affinities_gpu;
-//	fl fill_zero = 0;
-//	fl fill_one = 1;
-//	unsigned int fill_inf = INFINITY;
-//	cl_event event1;
-//	CreateDeviceBuffer(&affinities_gpu, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, MAX_NUM_OF_M_DATA* needed.size() * sizeof(fl), context);
-//	err = clEnqueueFillBuffer(queue, affinities_gpu, &fill_zero, sizeof(fill_zero), 0, MAX_NUM_OF_M_DATA * needed.size() * sizeof(fl), 0, NULL, &event1); checkErr(err);
-//	total_mem += MAX_NUM_OF_M_DATA * needed.size() * sizeof(fl);
-//
-//	cl_mem m_init_gpu;
-//	CreateDeviceBuffer(&m_init_gpu, CL_MEM_READ_ONLY, 3 * sizeof(fl), context);
-//	err = clEnqueueWriteBuffer(queue, m_init_gpu, true, 0, 3 * sizeof(fl), g.m_init.data, 0, NULL, NULL); checkErr(err);//这里将结构体grid中的成员m_init改为了public，可以直接访问
-//	total_mem += 3 * sizeof(fl);
-//
-//	cl_mem m_factor_inv_gpu;
-//	CreateDeviceBuffer(&m_factor_inv_gpu, CL_MEM_READ_ONLY, 3 * sizeof(fl), context);
-//	err = clEnqueueWriteBuffer(queue, m_factor_inv_gpu, true, 0, 3 * sizeof(fl), g.m_factor_inv.data, 0, NULL, NULL); checkErr(err);//这里将结构体grid中的成员m_factor_inv改为了public，可以直接访问
-//	total_mem += 3 * sizeof(fl);
-//
-//	cl_mem m_range_gpu;
-//	CreateDeviceBuffer(&m_range_gpu, CL_MEM_READ_ONLY, 3 * sizeof(fl), context);
-//	err = clEnqueueWriteBuffer(queue, m_range_gpu, true, 0, 3 * sizeof(fl), g.m_range.data, 0, NULL, NULL); checkErr(err);
-//	total_mem += 3 * sizeof(fl);
-//
-//	cl_mem m_data_dims_gpu;
-//	int m_data_dims[3] = { ig.m_data.dim0(), ig.m_data.dim1(), ig.m_data.dim2() };
-//	CreateDeviceBuffer(&m_data_dims_gpu, CL_MEM_READ_ONLY, 3 * sizeof(int), context);
-//	err = clEnqueueWriteBuffer(queue, m_data_dims_gpu, true, 0, 3 * sizeof(int), m_data_dims, 0, NULL, NULL); checkErr(err);
-//	total_mem += 3 * sizeof(int);
-//
-//	cl_mem loop_dims_gpu;
-//	int loop_dims[3] = { (int)g.m_data.dim0() ,(int)g.m_data.dim1() ,(int)g.m_data.dim2() };
-//	CreateDeviceBuffer(&loop_dims_gpu, CL_MEM_READ_ONLY, 3 * sizeof(int), context);
-//	err = clEnqueueWriteBuffer(queue, loop_dims_gpu, true, 0, 3 * sizeof(int), loop_dims, 0, NULL, NULL); checkErr(err);
-//	total_mem += 3 * sizeof(int);
-//
-//	cl_mem needed_gpu;
-//	int needed_size = needed.size();
-//	CreateDeviceBuffer(&needed_gpu, CL_MEM_READ_ONLY, needed_size * sizeof(int), context);
-//	err = clEnqueueWriteBuffer(queue, needed_gpu, true, 0, needed_size * sizeof(int), needed.data(), 0, NULL, NULL); checkErr(err);
-//	total_mem += needed_size * sizeof(int);
-//
-//	cl_mem ig_m_data_gpu;
-//	//Check if m_data is too large
-//	size_t max_m_data_size = 0;
-//	for (int i = 0; i < ig.m_data.m_data.size(); i++) {
-//		size_t m_data_size = ig.m_data.m_data[i].size();
-//		if (m_data_size > max_m_data_size)max_m_data_size = m_data_size;
-//	}
-//	if (   (ig.m_data.dim0() > MAX_M_DATA_MI)
-//		|| (ig.m_data.dim1() > MAX_M_DATA_MJ)
-//		|| (ig.m_data.dim2() > MAX_M_DATA_MK)
-//		|| (max_m_data_size  > MAX_NUM_OF_EVERY_M_DATA_ELEMENT)) {
-//		printf("\nm_data too large!");
-//		exit(-1);
-//	}
-//	//end Check
-//	CreateDeviceBuffer(&ig_m_data_gpu, CL_MEM_READ_ONLY, MAX_NUM_OF_TOTAL_M_DATA * sizeof(int), context);
-//	total_mem += MAX_NUM_OF_TOTAL_M_DATA * sizeof(int);
-//	err = clEnqueueFillBuffer(queue, ig_m_data_gpu, &fill_inf, sizeof(fill_inf), 0, MAX_NUM_OF_TOTAL_M_DATA * sizeof(int), 0, NULL, NULL); checkErr(err);
-//	for (int i = 0; i < ig.m_data.m_data.size(); i++) {
-//		err = clEnqueueWriteBuffer(queue, ig_m_data_gpu, false, i * MAX_NUM_OF_EVERY_M_DATA_ELEMENT * sizeof(int), ig.m_data.m_data[i].size() * sizeof(int), ig.m_data.m_data[i].data(), 0, NULL, NULL); checkErr(err);
-//	}
-//	clFinish(queue);
-//
-//	AtomConstant_gpu atomconstant_gpu;
-//	CreateDeviceBuffer(&(atomconstant_gpu.atom_types), CL_MEM_READ_ONLY, m.grid_atoms.size() * sizeof(double) * 4, context);
-//	err = clEnqueueFillBuffer(queue, atomconstant_gpu.atom_types, &fill_one, sizeof(fill_one), 0, m.grid_atoms.size() * sizeof(double), 0, NULL, NULL); checkErr(err);
-//	CreateDeviceBuffer(&(atomconstant_gpu.atom_coords), CL_MEM_READ_ONLY, m.grid_atoms.size() * sizeof(double) * 3, context);
-//	total_mem += m.grid_atoms.size() * sizeof(double) * 4;
-//	total_mem += m.grid_atoms.size() * sizeof(double) * 3;
-//
-//	for (int i = 0; i < m.grid_atoms.size(); i++) {
-//		double el[4] = { m.grid_atoms[i].el,m.grid_atoms[i].ad,m.grid_atoms[i].xs,m.grid_atoms[i].sy };
-//		err = clEnqueueWriteBuffer(queue, atomconstant_gpu.atom_types, false, i * 4 * sizeof(double), 4*sizeof(double),el, 0, NULL, NULL); checkErr(err);
-//		err = clEnqueueWriteBuffer(queue, atomconstant_gpu.atom_coords, false, i * 3 * sizeof(double), 3 * sizeof(double), m.grid_atoms[i].coords.data, 0, NULL, NULL); checkErr(err);
-//	}
-//	clFinish(queue);
-//
-//	cl_mem p_data_m_data_gpu;
-//	double m_cutoff_sqr = p.m_cutoff_sqr;
-//	int m_data_size = p.data.m_data.size();
-//	int m_data_fast_size = p.data.m_data[0].fast.size();//前提是所有m_data的fast size是一样的
-//	int m_data_smooth_size = p.data.m_data[0].smooth.size() * 2;//前提是所有m_data的smooth size是一样的
-//	int m_data_factor = p.data.m_data[0].factor;//前提是所有m_data的factor是一样的
-//	CreateDeviceBuffer(&p_data_m_data_gpu, CL_MEM_READ_ONLY, m_data_size * (m_data_fast_size + m_data_smooth_size + 1) * sizeof(double), context);
-//	total_mem += m_data_size * (m_data_fast_size + m_data_smooth_size + 1) * sizeof(double);
-//	for (int i = 0; i < m_data_size; i++) {
-//		err = clEnqueueWriteBuffer(queue, p_data_m_data_gpu, false, i * (m_data_fast_size + m_data_smooth_size + 1) * sizeof(double), m_data_fast_size * sizeof(double), p.data.m_data[i].fast.data(), 0, NULL, NULL); checkErr(err);
-//		err = clEnqueueWriteBuffer(queue, p_data_m_data_gpu, false, (i * (m_data_fast_size + m_data_smooth_size + 1) + m_data_fast_size) * sizeof(double), m_data_smooth_size * sizeof(double), p.data.m_data[i].smooth.data(), 0, NULL, NULL); checkErr(err);
-//		err = clEnqueueWriteBuffer(queue, p_data_m_data_gpu, false, (i * (m_data_fast_size + m_data_smooth_size + 1) + m_data_fast_size + m_data_smooth_size) * sizeof(double), sizeof(double), &p.data.m_data[i].factor, 0, NULL, NULL); checkErr(err);
-//	}
-//	clFinish(queue);
-//
-//	//end Allocate device memory
-//	//Set kernel arguments
-//	SetKernelArg(kernels[0], 0, sizeof(cl_mem), &affinities_gpu);
-//	SetKernelArg(kernels[0], 1, sizeof(cl_mem), &m_init_gpu);
-//	SetKernelArg(kernels[0], 2, sizeof(cl_mem), &m_factor_inv_gpu);
-//	SetKernelArg(kernels[0], 3, sizeof(cl_mem), &m_range_gpu);
-//	SetKernelArg(kernels[0], 4, sizeof(cl_mem), &ig_m_data_gpu);
-//	SetKernelArg(kernels[0], 5, sizeof(cl_mem), &m_data_dims_gpu);
-//	SetKernelArg(kernels[0], 6, sizeof(cl_mem), &loop_dims_gpu);
-//	SetKernelArg(kernels[0], 7, sizeof(double), &epsilon_fl);
-//	SetKernelArg(kernels[0], 8, sizeof(cl_mem), &atomconstant_gpu.atom_types);
-//	SetKernelArg(kernels[0], 9, sizeof(cl_mem), &atomconstant_gpu.atom_coords);
-//	SetKernelArg(kernels[0], 10, sizeof(int),	&atu);
-//	SetKernelArg(kernels[0], 11, sizeof(int),	&nat);
-//	SetKernelArg(kernels[0], 12, sizeof(double),&cutoff_sqr);
-//	SetKernelArg(kernels[0], 13, sizeof(cl_mem),&needed_gpu);
-//	SetKernelArg(kernels[0], 14, sizeof(int),	&needed_size);
-//	SetKernelArg(kernels[0], 15, sizeof(cl_mem),&p_data_m_data_gpu);
-//	SetKernelArg(kernels[0], 16, sizeof(int),	&m_data_fast_size);
-//	SetKernelArg(kernels[0], 17, sizeof(int),	&m_data_smooth_size);
-//	SetKernelArg(kernels[0], 18, sizeof(int),	&m_data_factor);
-//	SetKernelArg(kernels[0], 19, sizeof(double),&m_cutoff_sqr);
-//
-//
-//	//end Set kernel arguments
-//	//Start kernel
-//	size_t global_size[3] = { MAX_NUM_OF_M_DATA_DIM0, MAX_NUM_OF_M_DATA_DIM1, MAX_NUM_OF_M_DATA_DIM2};
-//	err = clEnqueueNDRangeKernel(queue, kernels[0], 3, 0, global_size, NULL, 0, NULL, NULL); checkErr(err);
-//
-//	//Handle data
-//	fl* affinities_cpu;
-//	affinities_cpu = (fl*)clEnqueueMapBuffer(queue, affinities_gpu, true, CL_MAP_READ, 0, MAX_NUM_OF_M_DATA * needed.size() * sizeof(fl), 0, NULL, NULL, &err);
-//	//for (int i = 24; i < 30; i++) {
-//	//	printf("\n affinities[%d]=%f",i,affinities_cpu[i]);
-//	//}
-//
-//	VINA_FOR(x, g.m_data.dim0()) {                  //for(x=0;x<m_i;x++)；m_i：array3d类中的成员变量
-//		VINA_FOR(y, g.m_data.dim1()) {              //for(y=0;y<m_j;y++)；m_j：array3d类中的成员变量
-//			VINA_FOR(z, g.m_data.dim2()) {          //for(z=0;z<m_k;z++)；m_k：array3d类中的成员变量
-//				VINA_FOR_IN(j, needed) {						//for(j=0;j<needed.size;j++)
-//					sz t = needed[j];							//将needed向量元素依次赋值给t
-//					assert(t < nat);
-//					grids[t].m_data(x, y, z) = affinities_cpu[x * (loop_dims[1] * loop_dims[2] * needed_size) + \
-//						y * (loop_dims[2] * needed_size) + z * needed_size + j];   // m_data[x+ m_i*(y + m_j*z)]=affinities[j]
-//				}
-//			}
-//		}
-//	}
-//
-//	//Release dvice memoery
-//	clReleaseMemObject(m_init_gpu);
-//	clReleaseMemObject(m_factor_inv_gpu);
-//	clReleaseMemObject(m_range_gpu);
-//	clReleaseMemObject(m_data_dims_gpu);
-//	clReleaseMemObject(loop_dims_gpu);
-//	clReleaseMemObject(needed_gpu);
-//	clReleaseMemObject(ig_m_data_gpu);
-//	clReleaseMemObject(atomconstant_gpu.atom_coords);
-//	clReleaseMemObject(atomconstant_gpu.atom_types);
-//	clReleaseMemObject(p_data_m_data_gpu);
-//
-//	printf("\n Total global memory use: %d Bytes/ %f KB/ %f MB", total_mem, (double)total_mem/1024, (double)total_mem/(1024*1024));
-// 	}
-
 bool cache::m_data_check(const szv_grid ig)const {
 	//Check if m_data is too large
 	size_t max_m_data_size = 0;
@@ -536,9 +306,10 @@ void cache::populate_cl(const model& m, const precalculate& p, const szv& atom_t
 	cl_device_id* devices;
 	cl_context context;
 	cl_command_queue queue;
-	SetupPlatform(&platforms);
-	SetupDevice(platforms, &devices);
-	SetupContext(platforms, devices, &context, 1);
+	cl_int gpu_platform_id = 0;
+	SetupPlatform(&platforms, &gpu_platform_id);
+	SetupDevice(platforms, &devices, gpu_platform_id);
+	SetupContext(platforms, devices, &context, 1, gpu_platform_id);
 	SetupQueue(&queue, context, devices);
 	char* program_file;
 	cl_program program_cl;
@@ -574,7 +345,7 @@ void cache::populate_cl(const model& m, const precalculate& p, const szv& atom_t
 
 	program_cl = SetupBuildProgramWithBinary(context, devices, "Kernel1_Opt.bin");
 
-	err = clUnloadPlatformCompiler(platforms[PLATFORM_CHOOSE]); checkErr(err);
+	err = clUnloadPlatformCompiler(platforms[gpu_platform_id]); checkErr(err);
 	//Set kernel arguments
 	cl_kernel kernels[1];
 	char kernel_name[][50] = { "kernel1" };
@@ -800,6 +571,7 @@ void cache::populate_cl(const model& m, const precalculate& p, const szv& atom_t
 	err = clReleaseMemObject(p_cl_gpu); checkErr(err);
 	err = clReleaseMemObject(results); checkErr(err);
 
+#ifdef DISPLAT_RUNTIME
 	// Output Analysis
 	cl_ulong time_start, time_end;
 	double total_time;
@@ -807,5 +579,5 @@ void cache::populate_cl(const model& m, const precalculate& p, const szv& atom_t
 	err = clGetEventProfilingInfo(cache_cl, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL); checkErr(err);
 	total_time = time_end - time_start;
 	printf("\n GPU cache runtime = %0.16f s\n", (total_time / 1000000000.0));
-
+#endif
 }

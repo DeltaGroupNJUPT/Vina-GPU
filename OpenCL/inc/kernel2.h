@@ -1,7 +1,6 @@
 #pragma once
 // Macros below are shared in both device and host
 #define TOLERANCE 1e-16
-#define PLATFORM_CHOOSE 0
 // kernel1 macros
 #define MAX_NUM_OF_EVERY_M_DATA_ELEMENT 512
 #define MAX_M_DATA_MI 16

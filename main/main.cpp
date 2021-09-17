@@ -281,7 +281,7 @@ void main_procedure(model& m, const boost::optional<model>& ref, // m is non-con
 	bool score_only, bool local_only, bool randomize_only, bool no_cache,
 	const grid_dims& gd, int exhaustiveness,
 	const flv& weights,
-	int cpu, int seed, int verbosity, sz num_modes, fl energy_range, tee& log, int search_depth, int e) {
+	int cpu, int seed, int verbosity, sz num_modes, fl energy_range, tee& log, int search_depth, int thread) {
 
 	doing(verbosity, "Setting up the scoring function", log);
 
@@ -303,7 +303,7 @@ void main_procedure(model& m, const boost::optional<model>& ref, // m is non-con
 	sz heuristic = m.num_movable_atoms() + 10 * m.get_size().num_degrees_of_freedom();
 	par.mc.num_steps = unsigned(70 * 3 * (50 + heuristic) / 2); // 2 * 70 -> 8 * 20 // FIXME
 	par.mc.search_depth = search_depth;// 20210811 Glinttsd
-	par.mc.e = e;// 20210811 Glinttsd
+	par.mc.thread = thread;// 20210811 Glinttsd
 
 	par.mc.ssd_par.evals = unsigned((25 + m.num_movable_atoms()) / 3);
 	par.mc.min_rmsd = 1.0;
@@ -332,14 +332,14 @@ void main_procedure(model& m, const boost::optional<model>& ref, // m is non-con
 			bool cache_needed = !(score_only || randomize_only || local_only);
 			if (cache_needed) doing(verbosity, "Analyzing the binding site", log);
 			cache c("scoring_function_version001", gd, slope, atom_type::XS);
-#ifdef OPENCL_VERSION
-			clock_t start_time = clock();
+#ifdef OPENCL_PART_1
+			//clock_t start_time = clock();
 			if (cache_needed) c.populate_cl(m, prec, m.get_movable_atom_types(prec.atom_typing_used()));
-			clock_t end_time = clock();
-			printf("\nOpenCL版花费时间为: %f s", double(end_time - start_time) / CLOCKS_PER_SEC);
+			//clock_t end_time = clock();
+			//printf("\nTotal runtime: %f s", double(end_time - start_time) / CLOCKS_PER_SEC);
 #else
 			if (cache_needed) c.populate(m, prec, m.get_movable_atom_types(prec.atom_typing_used()));
-#endif // OPENCL_VERSION
+#endif
 			if (cache_needed) done(verbosity, log);
 			do_search(m, ref, wt, prec, c, prec, c, nc,
 				out_name,
@@ -410,7 +410,7 @@ int main(int argc, char* argv[]) {
 	clock_t start = clock();
 
 	using namespace boost::program_options;
-	const std::string version_string = "AutoDock Vina 1.1.2 (May 11, 2011)";
+	const std::string version_string = "VINA-GPU";
 	const std::string error_message = "\n\n\
 Please contact the author, Dr. Oleg Trott <ot14@columbia.edu>, so\n\
 that this problem can be resolved. The reproducibility of the\n\
@@ -432,8 +432,11 @@ Thank you!\n";
 
 	const std::string cite_message = "\
 #################################################################\n\
-# If you used AutoDock Vina in your work, please cite:          #\n\
+# If you used VINA-GPU in your work, please cite:               #\n\
 #                                                               #\n\
+#                                                               #\n\
+#                                                               #\n\
+# And also the origin AutoDock Vina paper:                      #\n\
 # O. Trott, A. J. Olson,                                        #\n\
 # AutoDock Vina: improving the speed and accuracy of docking    #\n\
 # with a new scoring function, efficient optimization and       #\n\
@@ -448,7 +451,7 @@ Thank you!\n";
 	try {
 		std::string rigid_name, ligand_name, flex_name, config_name, out_name, log_name;
 		fl center_x = -8.654, center_y = 2.229, center_z = 19.715, size_x = 24.0, size_y = 26.25, size_z = 22.5;
-		int cpu = 1, seed, exhaustiveness = 8, verbosity = 2, num_modes = 9;
+		int cpu = 1, seed, exhaustiveness = 1, verbosity = 2, num_modes = 9;
 		fl energy_range = 2.0;
 		int search_depth = 0; // 20210811 Glinttsd
 		int thread = 0;
@@ -488,10 +491,10 @@ Thank you!\n";
 			;
 		options_description advanced("Advanced options (see the manual)");
 		advanced.add_options()
-			("thread", value<int>(&thread), "the number of computing lanes in VINA-GPU") // 20210811 Glinttsd
-			("search_depth", value<int>(&search_depth), "the number of search depth in monte carlo") // 20210811 Glinttsd
-			("score_only", bool_switch(&score_only), "score only - search space can be omitted")
-			("local_only", bool_switch(&local_only), "do local search only")
+			("thread", value<int>(&thread)->default_value(1000), "the number of computing lanes in VINA-GPU") // 20210811 Glinttsd
+			("search_depth", value<int>(&search_depth)->default_value(1), "the number of search depth in monte carlo") // 20210811 Glinttsd
+			//("score_only", bool_switch(&score_only), "score only - search space can be omitted")
+			//("local_only", bool_switch(&local_only), "do local search only")
 			("randomize_only", bool_switch(&randomize_only), "randomize input, attempting to avoid clashes")
 			("weight_gauss1", value<fl>(&weight_gauss1)->default_value(weight_gauss1), "gauss_1 weight")
 			("weight_gauss2", value<fl>(&weight_gauss2)->default_value(weight_gauss2), "gauss_2 weight")
@@ -502,9 +505,9 @@ Thank you!\n";
 			;
 		options_description misc("Misc (optional)");
 		misc.add_options()
-			("cpu", value<int>(&cpu), "the number of CPUs to use (the default is to try to detect the number of CPUs or, failing that, use 1)")
+			//("cpu", value<int>(&cpu), "the number of CPUs to use (the default is to try to detect the number of CPUs or, failing that, use 1)")
 			("seed", value<int>(&seed), "explicit random seed")
-			("exhaustiveness", value<int>(&exhaustiveness)->default_value(8), "exhaustiveness of the global search (roughly proportional to time): 1+")
+			//("exhaustiveness", value<int>(&exhaustiveness)->default_value(1), "exhaustiveness of the global search (roughly proportional to time): 1+")
 			("num_modes", value<int>(&num_modes)->default_value(9), "maximum number of binding modes to generate")
 			("energy_range", value<fl>(&energy_range)->default_value(3.0), "maximum energy difference between the best binding mode and the worst one displayed (kcal/mol)")
 			;
@@ -647,19 +650,19 @@ Thank you!\n";
 				gd[i].end = gd[i].begin + real_span;
 			}
 		}
-		if (vm.count("cpu") == 0) {
-			unsigned num_cpus = boost::thread::hardware_concurrency();
-			if (verbosity > 1) {
-				if (num_cpus > 0)
-					log << "Detected " << num_cpus << " CPU" << ((num_cpus > 1) ? "s" : "") << '\n';
-				else
-					log << "Could not detect the number of CPUs, using 1\n";
-			}
-			if (num_cpus > 0)
-				cpu = num_cpus;
-			else
-				cpu = 1;
-		}
+		//if (vm.count("cpu") == 0) {
+		//	unsigned num_cpus = boost::thread::hardware_concurrency();
+		//	if (verbosity > 1) {
+		//		if (num_cpus > 0)
+		//			log << "Detected " << num_cpus << " CPU" << ((num_cpus > 1) ? "s" : "") << '\n';
+		//		else
+		//			log << "Could not detect the number of CPUs, using 1\n";
+		//	}
+		//	if (num_cpus > 0)
+		//		cpu = num_cpus;
+		//	else
+		//		cpu = 1;
+		//}
 		if (cpu < 1)
 			cpu = 1;
 		if (verbosity > 1 && exhaustiveness < cpu)
@@ -715,14 +718,14 @@ Thank you!\n";
 		return 1;
 	}
 
-	clock_t end = clock();
-	std::ofstream file("gpu_runtime.txt", std::ios::app);
-	if (file.is_open())
-	{
-		file << "GPU total runtime = " << (double)(end - start) / CLOCKS_PER_SEC << std::endl;
-		file.close();
-	}
+	//clock_t end = clock();
+	//std::ofstream file("gpu_runtime.txt", std::ios::app);
+	//if (file.is_open())
+	//{
+	//	file << "GPU total runtime = " << (double)(end - start) / CLOCKS_PER_SEC << std::endl;
+	//	file.close();
+	//}
 
-	std::cout << "GPU total runtime = " << (double)(end - start) / CLOCKS_PER_SEC << " s" << std::endl;
+	//std::cout << "GPU total runtime = " << (double)(end - start) / CLOCKS_PER_SEC << " s" << std::endl;
 	//getchar();
 }

@@ -1,4 +1,6 @@
 #include <wrapcl.h>
+//#define DISPLAY_SUCCESS
+//#define DISPLAY_ADDITION_INFO
 
 void checkErr(cl_int err) {
     if (CL_SUCCESS != err) {
@@ -75,19 +77,26 @@ void read_n_file(char** program_file, size_t* program_size, std::string file_pat
 }
 
 
-void SetupPlatform(cl_platform_id** platforms) {
+void SetupPlatform(cl_platform_id** platforms, cl_int* gpu_platform) {
     cl_int err;
-    cl_uint a = 2;
     cl_uint num_platform;
     size_t size;
+    std::string nvidia = "NVIDIA";
+    std::string amd = "AMD";
     err = clGetPlatformIDs(0, NULL, &num_platform); checkErr(err);
     *platforms = (cl_platform_id*)malloc(sizeof(cl_platform_id) * (num_platform));
     err = clGetPlatformIDs(num_platform, *platforms, NULL); checkErr(err);
     //获取平台信息
+
     for (int i = 0; i < num_platform; i++) {
         err = clGetPlatformInfo((*platforms)[i], CL_PLATFORM_NAME, 0, NULL, &size); checkErr(err);
         char* platform_name = (char*)malloc(sizeof(char) * size);
         err = clGetPlatformInfo((*platforms)[i], CL_PLATFORM_NAME, size, platform_name, NULL); checkErr(err);
+        std::string tmp = platform_name;
+        if (tmp.find(nvidia) != std::string::npos || tmp.find(amd) != std::string::npos) {
+            *gpu_platform = i;
+        }
+#ifdef DISPLAY_ADDITION_INFO
         printf("\nPlatform %d : %s\n", i, platform_name);
         free(platform_name);
         err = clGetPlatformInfo((*platforms)[i], CL_PLATFORM_VERSION, 0, NULL, &size); checkErr(err);
@@ -95,53 +104,60 @@ void SetupPlatform(cl_platform_id** platforms) {
         err = clGetPlatformInfo((*platforms)[i], CL_PLATFORM_VERSION, size, platform_version, NULL); checkErr(err);
         printf("\nPlatform %d version: %s\n", i, platform_version);
         free(platform_version);
+#endif
     }
+
 }
 
 
-void SetupDevice(cl_platform_id* platforms, cl_device_id** devices) {
+void SetupDevice(cl_platform_id* platforms, cl_device_id** devices, cl_int gpu_platform) {
     cl_uint num_device;
     cl_int err;
     size_t device_name_size;
     cl_ulong mem_size;
-    cl_int N = PLATFORM_CHOOSE;
+    cl_int N = gpu_platform;
     //初始化第N个平台的设备信息
     err = clGetDeviceIDs(platforms[N], CL_DEVICE_TYPE_GPU, 0, NULL, &num_device); checkErr(err);
     *devices = (cl_device_id*)malloc(sizeof(cl_device_id) * num_device);
     err = clGetDeviceIDs(platforms[N], CL_DEVICE_TYPE_GPU, num_device, *devices, NULL); checkErr(err);
-    for (int i = 0; i < num_device; i++) {
-        err = clGetDeviceInfo((*devices)[i], CL_DEVICE_NAME, 0, NULL, &device_name_size); checkErr(err);
-        char* device_name = (char*)malloc(sizeof(char) * device_name_size);
-        err = clGetDeviceInfo((*devices)[i], CL_DEVICE_NAME, device_name_size, device_name, NULL);
-        printf("\nPlatform %d device name:%s\n", N, device_name);
+#ifdef DISPLAY_ADDITION_INFO
+    //Display devices info
+    //for (int i = 0; i < num_device; i++) {
+    //    err = clGetDeviceInfo((*devices)[i], CL_DEVICE_NAME, 0, NULL, &device_name_size); checkErr(err);
+    //    char* device_name = (char*)malloc(sizeof(char) * device_name_size);
+    //    err = clGetDeviceInfo((*devices)[i], CL_DEVICE_NAME, device_name_size, device_name, NULL);
+    //    printf("\nPlatform %d device name:%s\n", N, device_name);
 
-        err = clGetDeviceInfo((*devices)[i], CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(cl_ulong), &mem_size, NULL);
-        printf("\nPlatform %d global memory size:%f GB\n", N, (double)mem_size/1000000000);
+    //    err = clGetDeviceInfo((*devices)[i], CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(cl_ulong), &mem_size, NULL);
+    //    printf("\nPlatform %d global memory size:%f GB\n", N, (double)mem_size/1000000000);
 
-        err = clGetDeviceInfo((*devices)[i], CL_DEVICE_LOCAL_MEM_SIZE, sizeof(cl_ulong), &mem_size, NULL);
-        printf("\nPlatform %d local memory size:%f KB\n", N, (double)mem_size / 1000);
-    }
+    //    err = clGetDeviceInfo((*devices)[i], CL_DEVICE_LOCAL_MEM_SIZE, sizeof(cl_ulong), &mem_size, NULL);
+    //    printf("\nPlatform %d local memory size:%f KB\n", N, (double)mem_size / 1000);
+    //}
     //初始化第二个平台的设备信息
     //err = clGetDeviceIDs(platforms[1], CL_DEVICE_TYPE_CPU, 0, NULL, &num_device);checkErr(err);
     //*devices = (cl_device_id*)malloc(sizeof(cl_device_id)*num_device);
     //err = clGetDeviceIDs(platforms[1], CL_DEVICE_TYPE_CPU, num_device, *devices, NULL);checkErr(err);
+#endif
 }
 
 
-void SetupContext(cl_platform_id* platforms, cl_device_id* devices, cl_context* context, cl_uint num_device) {
+void SetupContext(cl_platform_id* platforms, cl_device_id* devices, cl_context* context, cl_uint num_device, cl_int gpu_platform_id) {
     cl_int err;
     //选择第一个平台
-    cl_context_properties properties[] = { CL_CONTEXT_PLATFORM, (cl_context_properties)(platforms[PLATFORM_CHOOSE]), 0 };
+    cl_context_properties properties[] = { CL_CONTEXT_PLATFORM, (cl_context_properties)(platforms[gpu_platform_id]), 0 };
     cl_int num_device_in_context;
     *context = clCreateContext(properties, num_device, devices, NULL, NULL, &err);
     if (err == CL_SUCCESS) {
+#ifdef DISPLAY_SUCCESS
         printf("Create context success!\n");
+#endif
     }
     else {
         printf("Fail to create context! Err(%d)\n", err);
     }
     err = clGetContextInfo(*context, CL_CONTEXT_NUM_DEVICES, sizeof(cl_int), &num_device_in_context, NULL); checkErr(err);
-    printf("\nDevice number in Context: %d\n", num_device_in_context);
+    //printf("\nDevice number in Context: %d\n", num_device_in_context);
 }
 
 
@@ -150,9 +166,11 @@ void SetupQueue(cl_command_queue* queue, cl_context context, cl_device_id* devic
     cl_command_queue_properties props[] = { CL_QUEUE_PROFILING_ENABLE };
     //选择第0个设备
     *queue = clCreateCommandQueue(context, devices[0], *props, &err); checkErr(err);
-    
+     
     if (err == CL_SUCCESS) {
+#ifdef DISPLAY_SUCCESS
         printf("Create queue success!\n");
+#endif
     }
     else {
         printf("Fail to create queue! Err(%d)\n", err);
@@ -187,10 +205,12 @@ void SetupBuildProgramWithSource(cl_program program_cl, cl_program program_head,
         free(buffer);
     }
     else {
+#ifdef  DISPLAY_SUCCESS
         printf("\nBuild program success!");
         size_t num_kernel;
         err = clGetProgramInfo(program_cl, CL_PROGRAM_NUM_KERNELS, sizeof(size_t), &num_kernel, NULL);
         printf("  Program kernel number: %d\n", (int)num_kernel);
+#endif
     }
     /*
         //把头文件程序对象与内核程序对象一起编译
