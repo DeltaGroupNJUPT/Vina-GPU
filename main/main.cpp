@@ -434,7 +434,9 @@ Thank you!\n";
 #################################################################\n\
 # If you used VINA-GPU in your work, please cite:               #\n\
 #                                                               #\n\
-#                                                               #\n\
+#Shidi, Tang, Chen Ruiqi, Lin Mengru, Lin Qingde,               #\n\
+#Zhu Yanxiang, Wu Jiansheng, Hu Haifeng, and Ling Ming.         #\n\
+#Accelerating AutoDock VINA with GPUs. ChemRxiv (2021).Print.   #\n\
 #                                                               #\n\
 # And also the origin AutoDock Vina paper:                      #\n\
 # O. Trott, A. J. Olson,                                        #\n\
