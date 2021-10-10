@@ -11,3 +11,7 @@ Take an example on PDBid:2bm2 (all example files in the input_file_example direc
 2. make sure that `VINA-GPU.exe`, `2bm2_config.txt` and `Kernel2_Opt.bin` are in the same directory
 3. Type `VINA-GPU.exe --config 2bm2_config.txt`
 4. Wait untill the docking process finishes and the output file will be `2bm2_out.pdbqt` 
+
+## Citation
+If you used VINA-GPU in your work, please cite: Shidi, Tang, Chen Ruiqi, Lin Mengru, Lin Qingde, Zhu Yanxiang, Wu Jiansheng, Hu Haifeng, and Ling Ming. "Accelerating AutoDock VINA with GPUs." ChemRxiv (2021). Print.
+And also the origin AutoDock Vina paper: O. Trott, A. J. Olson, AutoDock Vina: improving the speed and accuracy of docking with a new scoring function, efficient optimization and multithreading, Journal of Computational Chemistry 31 (2010) 455-461.
