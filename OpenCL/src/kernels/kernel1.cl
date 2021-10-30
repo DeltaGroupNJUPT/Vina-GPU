@@ -9,7 +9,6 @@ int fl_to_sz(float x, float max_sz) {
 	if (x <= 0) return 0;
 	if (x >= max_sz) return max_sz;
 	return (int)x;
-	//这里省掉了一段代码
 }
 int num_atom_types(int atu) {
 	switch (atu) {
@@ -17,7 +16,7 @@ int num_atom_types(int atu) {
 	case 1: return AD_TYPE_SIZE;
 	case 2: return XS_TYPE_SIZE;
 	case 3: return SY_TYPE_SIZE;
-	default: printf("Kernel1:num_atom_types ERROR!"); return INFINITY;//替换了assert()
+	default: printf("\nkernel1:num_atom_types ERROR!"); return INFINITY;// replace assert()
 	}
 }
 
@@ -26,9 +25,9 @@ const float vec_distance_sqr(const __global float* a, const float* b) {
 }
 
 const int triangular_matrix_index(int n, int i, int j) {
-	if (j >= n) printf("Kernel1:triangular_matrix_index ERROR!");//替换了assert()
+	if (j >= n) printf("\nkernel1:triangular_matrix_index ERROR!");// replace assert()
 	//assert(j < n);
-	if (i > j) printf("Kernel1:triangular_matrix_index ERROR!");//替换了assert()
+	if (i > j) printf("\nkernel1:triangular_matrix_index ERROR!");// replace assert()
 	return i + j * (j + 1) / 2;
 }
 
@@ -37,10 +36,10 @@ const int triangular_matrix_index_permissive(int n, int i, int j) {
 }
 
 float eval_fast(int type_pair_index, float r2, float m_cutoff_sqr, __global p_m_data_cl* m_data, float factor) {
-	if (r2 > m_cutoff_sqr) printf("Kernel1:eval_fast ERROR!");//替换了assert()
-	if (r2 * factor >= FAST_SIZE)printf("Kernel1:eval_fast ERROR!");//替换了assert()
+	if (r2 > m_cutoff_sqr) printf("\nkernel1:eval_fast ERROR!");// replace assert()
+	if (r2 * factor >= FAST_SIZE)printf("\nkernel1:eval_fast ERROR!");// replace assert()
 	int i = (int)(factor * r2);
-	if (i >= FAST_SIZE)printf("Kernel1:eval_fast ERROR!");//替换了assert()
+	if (i >= FAST_SIZE)printf("\nkernel1:eval_fast ERROR!");// replace assert()
 	float res = m_data[type_pair_index].fast[i];
 	return res;
 }
@@ -55,8 +54,8 @@ const __global int* __private possibilities(						float*		coords,
 	int index[3];
 	float temp_array[3];
 	for (int i = 0; i < 3; i++) {
-		if (coords[i] + epsilon_fl < ig_m_init[i]) printf("\n Kernel1:possibilities ERROR!1");//替换了assert()
-		if (coords[i] > ig_m_init[i] + ig_m_range[i] + epsilon_fl) printf("\n Kernel1:possibilities ERROR!2");//替换了assert()
+		if (coords[i] + epsilon_fl < ig_m_init[i]) printf("\nkernel1:possibilities ERROR!1");//替换了assert()
+		if (coords[i] > ig_m_init[i] + ig_m_range[i] + epsilon_fl) printf("\nkernel1:possibilities ERROR!2");//替换了assert()
 		const float tmp = (coords[i] - ig_m_init[i]) * m_data_dims[i] / ig_m_range[i];
 		temp_array[i] = tmp;
 		index[i] = fl_to_sz(tmp, m_data_dims[i] - 1);//若0<tmp<m_data.dim(i) - 1则 强制整形并输出
@@ -69,7 +68,7 @@ const __global int* __private possibilities(						float*		coords,
 }
 
 __kernel
-void kernel1(			__global	grid_cl*		g,
+void \nkernel1(			__global	grid_cl*		g,
 						__global	grid_atoms_cl*	ga,
 						__global	p_cl*			p,
 				const				int				atu,
@@ -106,7 +105,7 @@ void kernel1(			__global	grid_cl*		g,
 		if (r2 <= p->m_cutoff_sqr) {
 			for (int j = 0; j < needed_size; j++) {
 				const int t2 = needed[j];
-				if (t2 > nat) printf("\n Kernel1:t2 ERROR!");//替换了assert()
+				if (t2 > nat) printf("\nkernel1:t2 ERROR!");// replace assert()
 				const int type_pair_index = triangular_matrix_index_permissive(num_atom_types(atu), t1, t2);
 				affinities[z * (GRID_MJ * GRID_MI) + y * (GRID_MI) + x].data[j] += \
 						eval_fast(type_pair_index, r2, p->m_cutoff_sqr, p->m_data, p->factor);

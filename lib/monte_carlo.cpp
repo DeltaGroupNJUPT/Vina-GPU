@@ -34,6 +34,7 @@
 
 //#define DISPLAY_ANALYSIS
 //#define DATA_DISTRIBUTION_TEST
+//#define BUILD_KERNEL_FROM_SOURCE
 output_type monte_carlo::operator()(model& m, const precalculate& p, const igrid& ig, const precalculate& p_widened, const igrid& ig_widened, const vec& corner1, const vec& corner2, incrementable* increment_me, rng& generator) const {
 	output_container tmp;
 	this->operator()(m, tmp, p, ig, p_widened, ig_widened, corner1, corner2, increment_me, generator); // call the version that produces the whole container
@@ -199,40 +200,35 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	cl_program program_cl;
 	cl_program program;
 	size_t program_size;
+
 	//Read kernel source code
-	
-	////const std::string default_work_path = "D:/VScode_Project/AutoDock_vina_Opencl_float";
-	////const std::string default_work_path = "C:/Users/vipuser/Desktop/test";
-	//const std::string default_work_path = ".";
-	//const std::string include_path = default_work_path + "/OpenCL/inc"; //FIX it
-	//const std::string addtion = "";
+#ifdef BUILD_KERNEL_FROM_SOURCE
+	const std::string default_work_path = ".";
+	const std::string include_path = default_work_path + "/OpenCL/inc"; //FIX it
+	const std::string addtion = "";
 
-	////read_file(&program_file, &program_size, default_work_path + "/OpenCL/src/kernels/kernel2.cl");
-	////program_cl = clCreateProgramWithSource(context, 1, (const char**)&program_file, &program_size, &err); checkErr(err);
-	//
-	//char* program_file_n[NUM_OF_FILES];
-	//size_t program_size_n[NUM_OF_FILES];
-	//std::string file_paths[NUM_OF_FILES] = {	default_work_path + "/OpenCL/src/kernels/code_head.cpp",
-	//											default_work_path + "/OpenCL/src/kernels/mutate_conf.cpp",
-	//											default_work_path + "/OpenCL/src/kernels/matrix.cpp",
-	//											default_work_path + "/OpenCL/src/kernels/quasi_newton.cpp",
-	//											default_work_path + "/OpenCL/src/kernels/kernel2.cl"}; // The order of files is important!
+	char* program_file_n[NUM_OF_FILES];
+	size_t program_size_n[NUM_OF_FILES];
+	std::string file_paths[NUM_OF_FILES] = {	default_work_path + "/OpenCL/src/kernels/code_head.cpp",
+												default_work_path + "/OpenCL/src/kernels/mutate_conf.cpp",
+												default_work_path + "/OpenCL/src/kernels/matrix.cpp",
+												default_work_path + "/OpenCL/src/kernels/quasi_newton.cpp",
+												default_work_path + "/OpenCL/src/kernels/kernel2.cl"}; // The order of files is important!
 
-	//read_n_file(program_file_n, program_size_n, file_paths, NUM_OF_FILES);
-	//std::string final_file;
-	//size_t final_size = NUM_OF_FILES - 1; // count '\n'
-	//for (int i = 0; i < NUM_OF_FILES; i++) {
-	//	if (i == 0) final_file = program_file_n[0];
-	//	else final_file = final_file + '\n' + (std::string)program_file_n[i];
-	//	final_size += program_size_n[i];
-	//}
-	//const char* final_files_char = final_file.data();
+	read_n_file(program_file_n, program_size_n, file_paths, NUM_OF_FILES);
+	std::string final_file;
+	size_t final_size = NUM_OF_FILES - 1; // count '\n'
+	for (int i = 0; i < NUM_OF_FILES; i++) {
+		if (i == 0) final_file = program_file_n[0];
+		else final_file = final_file + '\n' + (std::string)program_file_n[i];
+		final_size += program_size_n[i];
+	}
+	const char* final_files_char = final_file.data();
 
-	//program_cl = clCreateProgramWithSource(context, 1, (const char**)&final_files_char, &final_size, &err); checkErr(err);
-	//SetupBuildProgramWithSource(program_cl, NULL, devices, include_path, addtion);
-	//SaveProgramToBinary(program_cl, "Kernel2_Opt.bin");
-	
-	
+	program_cl = clCreateProgramWithSource(context, 1, (const char**)&final_files_char, &final_size, &err); checkErr(err);
+	SetupBuildProgramWithSource(program_cl, NULL, devices, include_path, addtion);
+	SaveProgramToBinary(program_cl, "Kernel2_Opt.bin");
+#endif
 	program_cl = SetupBuildProgramWithBinary(context, devices, "Kernel2_Opt.bin");
 
 	err = clUnloadPlatformCompiler(platforms[gpu_platform_id]); checkErr(err);
@@ -242,15 +238,13 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	SetupKernel(kernels, program_cl, 1, kernel_name);
 
 	int max_wg_size; // max work item within one work group
-	int max_wi_size[3]; // max work item within each dimension(global)1
+	int max_wi_size[3]; // max work item within each dimension(global)
 	err = clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(int), &max_wg_size, NULL); checkErr(err);
 	err = clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_ITEM_SIZES, 3 * sizeof(int), &max_wi_size, NULL); checkErr(err);
 	
 	/**************************************************************************/
 	/*********    Generate random seeds (depend on exhaustiveness)    *********/
 	/**************************************************************************/
-	int control = 1;
-	//int exhaustiveness = thread; // user-define
 
 	std::vector<rng> generator_vec;
 	for (int i = 0; i < thread; i++) {
@@ -304,30 +298,16 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	// Preparing ligand data
 	assert(m.num_other_pairs() == 0); // m.other_paris is not supported!
 	assert(m.ligands.size() == 1); // Only one ligand supported!
-
 	m_cl.ligand.pairs.num_pairs = m.ligands[0].pairs.size();
 	for (int i = 0; i < m_cl.ligand.pairs.num_pairs; i++) {
 		m_cl.ligand.pairs.type_pair_index[i]	= m.ligands[0].pairs[i].type_pair_index;
 		m_cl.ligand.pairs.a[i]					= m.ligands[0].pairs[i].a;
 		m_cl.ligand.pairs.b[i]					= m.ligands[0].pairs[i].b;
 	}
-
 	m_cl.ligand.begin = m.ligands[0].begin; // 0
 	m_cl.ligand.end = m.ligands[0].end; // 29
-	
 	ligand m_ligand = m.ligands[0]; // Only support one ligand 
 	assert(m_ligand.end < MAX_NUM_OF_ATOMS);
-
-	//size_t lig_rigid_size = 2				 * MAX_NUM_OF_RIGID * sizeof(int)    + 
-	//						3				 * MAX_NUM_OF_RIGID * sizeof(double) + 
-	//						9				 * MAX_NUM_OF_RIGID * sizeof(double) +
-	//						4				 * MAX_NUM_OF_RIGID * sizeof(double) +
-	//						3				 * MAX_NUM_OF_RIGID * sizeof(double) +
-	//						3				 * MAX_NUM_OF_RIGID * sizeof(double) +
-	//						3				 * MAX_NUM_OF_RIGID * sizeof(double) +
-	//						1				 * MAX_NUM_OF_RIGID * sizeof(int)	 +
-	//						MAX_NUM_OF_RIGID * MAX_NUM_OF_RIGID * sizeof(bool)   +
-	//						1									* sizeof(int);
 
 	// Store root node
 	m_cl.ligand.rigid.atom_range[0][0] = m_ligand.node.begin;
@@ -340,12 +320,12 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	m_cl.ligand.rigid.orientation_q[0][3] = m_ligand.node.orientation().R_component_4();
 	for (int i = 0; i < 3; i++) {m_cl.ligand.rigid.axis[0][i] = 0;m_cl.ligand.rigid.relative_axis[0][i] = 0;m_cl.ligand.rigid.relative_origin[0][i] = 0;}
 
-	// Store children nodes 以深度优先存储
-	struct tmp_struct { // 在结构体中定义函数(不可在函数中直接定义函数!)
+	// Store children nodes (in depth-first order)
+	struct tmp_struct { 
 		int start_index = 0;
 		int parent_index = 0;
 		void store_node(tree<segment>& child_ptr, rigid_cl& rigid) {
-			start_index++; // 在列表中以1开始存储,0为root节点
+			start_index++; // start with index 1, index 0 is root node
 			rigid.parent[start_index] = parent_index;
 			rigid.atom_range[start_index][0] = child_ptr.node.begin;
 			rigid.atom_range[start_index][1] = child_ptr.node.end;
@@ -376,8 +356,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 		ts.parent_index = 0; // Start a new branch, whose parent is 0
 		ts.store_node(m_ligand.children[i], m_cl.ligand.rigid);
 	}
-	
-	m_cl.ligand.rigid.num_children = ts.start_index; // 7
+	m_cl.ligand.rigid.num_children = ts.start_index;
 
 	// set children_map
 	for (int i = 0; i < MAX_NUM_OF_RIGID; i++)
@@ -387,20 +366,16 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 		int parent_index = m_cl.ligand.rigid.parent[i];
 		m_cl.ligand.rigid.children_map[parent_index][i] = true;
 	}
-	
 	m_cl.m_num_movable_atoms = m.num_movable_atoms();
-
 	size_t m_cl_size = sizeof(m_cl);
 
 	// Preparing ig related data
 	ig_cl ig_cl;
-
 	ig_cl.atu = ig.get_atu(); // atu
 	ig_cl.slope = ig.get_slope(); // slope
-
 	std::vector<grid> tmp_grids = ig.get_grids();
 	int grid_size = tmp_grids.size();
-	assert(GRIDS_SIZE == grid_size); // grid_size 必须是 17
+	assert(GRIDS_SIZE == grid_size); // grid_size has to be 17
 
 	for (int i = 0; i < grid_size; i++) {
 		for (int j = 0; j < 3; j++) {
@@ -417,7 +392,6 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 			for (int j = 0; j < GRID_MI * GRID_MJ * GRID_MK; j++) {
 				ig_cl.grids[i].m_data[j] = tmp_grids[i].m_data.m_data[j];
 			}
-			//memcpy(ig_cl.grids[i].m_data, tmp_grids[i].m_data.m_data.data(), GRID_MI * GRID_MJ * GRID_MK * sizeof(double));
 		}
 		else {
 			ig_cl.grids[i].m_i = 0;
@@ -437,10 +411,9 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	
 	for (int i = 0; i < thread; i++) {
 		tmp.c.randomize(corner1, corner2, generator_vec[i]); // generate a random structure
-		//P用均匀划分
+		//Generate positions with uniform probability
 		//generate_uniform_position(corner1, corner2, uniform_data, exhaustiveness);
 		//for (int j = 0; j < 3; j++) rand_molec_struc_vec[i].position[j] = uniform_data[i].data[j];
-		//P用概率划分
 		for (int j = 0; j < 3; j++) rand_molec_struc_vec[i].position[j] = tmp.c.ligands[0].rigid.position[j];
 		assert(lig_torsion_size < MAX_NUM_OF_LIG_TORSION);
 		for (int j = 0; j < lig_torsion_size; j++) rand_molec_struc_vec[i].lig_torsion[j] = tmp.c.ligands[0].torsions[j];// Only support one ligand
@@ -457,12 +430,9 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 
 	// Preaparing p related data
 	p_cl p_cl;
-
-	//size_t p_para_size = 2 * sizeof(double) + sizeof(int);
 	p_cl.m_cutoff_sqr = p.cutoff_sqr();
 	p_cl.factor = p.factor;
 	p_cl.n = p.n;
-
 	assert(MAX_P_DATA_M_DATA_SIZE > p.data.m_data.size());
 	for (int i = 0; i < p.data.m_data.size(); i++) {
 		p_cl.m_data[i].factor = p.data.m_data[i].factor;
@@ -475,15 +445,11 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 			p_cl.m_data[i].smooth[j][0] = p.data.m_data[i].smooth[j].first;
 			p_cl.m_data[i].smooth[j][1] = p.data.m_data[i].smooth[j].second;
 		}
-		//memcpy(p_cl.m_data[i].fast, p.data.m_data[i].fast.data(), FAST_SIZE * sizeof(float));
-		//memcpy(p_cl.m_data[i].smooth, p.data.m_data[i].smooth.data(), 2 * SMOOTH_SIZE * sizeof(float));
 	}
-
 	size_t p_cl_size = sizeof(p_cl);
 
 	// Generate random maps
 	random_maps rand_maps;
-	
 	for (int i = 0; i < MAX_NUM_OF_RANDOM_MAP; i++) {
 		rand_maps.int_map[i] = random_int(0, int(lig_torsion_size), generator_vec[0]);
 		rand_maps.pi_map[i] = random_fl(-pi, pi, generator_vec[0]);
@@ -505,7 +471,6 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	/**************************************************************************/
 	/************************    Allocate GPU memory    ***********************/
 	/**************************************************************************/
-
 	cl_mem rand_molec_struc_vec_gpu;
 	CreateDeviceBuffer(&rand_molec_struc_vec_gpu, CL_MEM_READ_ONLY, thread* SIZE_OF_MOLEC_STRUC, context);
 	for (int i = 0; i < thread; i++) {
@@ -562,7 +527,6 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	CreateDeviceBuffer(&results, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, thread * sizeof(output_type_cl), context);
 	
 	clFinish(queue);
-
 	/**************************************************************************/
 	/************************   Set kernel arguments    ***********************/
 	/**************************************************************************/
@@ -585,7 +549,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	/**************************************************************************/
 	/****************************   Start kernel    ***************************/
 	/**************************************************************************/
-	size_t global_size[2] = {512, 16 };
+	size_t global_size[2] = {512, 32 };
 	size_t local_size[2] = { 16,8 };
 
 	cl_event monte_clarlo_cl;
@@ -598,7 +562,6 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 																	0, thread * sizeof(output_type_cl),
 																	0, NULL, NULL, &err); checkErr(err);
 
-	//output_type tmp_cpu;
 	std::vector<output_type> result_vina = cl_to_vina(result_ptr, thread);
 
 	// Unmaping result data
@@ -637,7 +600,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	std::ofstream file("gpu_runtime.txt");
 	if (file.is_open())
 	{
-		file << "GPU monte carlo runtime = " << (double)(total_time / 1000000000.0) << std::endl;
+		file << "GPU monte carlo runtime = " << (double)(total_time / 1000000000.0) << " s" << std::endl;
 		file.close();
 	}
 

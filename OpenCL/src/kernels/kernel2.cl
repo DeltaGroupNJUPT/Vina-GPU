@@ -36,13 +36,13 @@ void get_heavy_atom_movable_coords( output_type_cl* tmp, const m_cl* m_cl_gpu) {
 			//printf("\n kernel2: removed H atom coords in get_heavy_atom_movable_coords()!");
 		}
 	}
-	//对其余值赋值0
+	//assign 0 for others
 	for (int i = counter; i < MAX_NUM_OF_ATOMS; i++) {
 		for (int j = 0; j < 3; j++)tmp->coords[i][j] = 0;
 	}
 }
 
-// 冒泡排序
+// Bubble Sort
 //void container_sort(out_container* out) {
 //	output_type_cl out_tmp;
 //	for (int i = 0; i < out->current_size - 1; i++) {
@@ -69,7 +69,7 @@ void add_to_output_container(out_container* out, const output_type_cl* tmp) {
 	}
 }
 
-//生成一个0-1之间的随机数(根据step)
+//Generate a random number according to step
 float generate_n(__constant float* pi_map, const int step) {
 	return fabs(pi_map[step]) / M_PI;
 }
@@ -78,8 +78,6 @@ bool metropolis_accept(float old_f, float new_f, float temperature, float n) {
 	if (new_f < old_f)return true;
 	const float acceptance_probability = exp((old_f - new_f) / temperature);
 	bool res = n < acceptance_probability;
-	//if (res)printf("\n Accept!"); else printf("\n Refuse!");
-	//printf("\n n = %f", n);
 	return n < acceptance_probability;
 }
 
@@ -123,21 +121,11 @@ void kernel2(	__global	m_cl*			m_cl_global,
 
 	float best_e = INFINITY;
 
-
-
-
-	//测试
-	//int check_id = 640;
 	for (int gll = gl;
 			 gll < e;
 			 gll += total_wi
 		)
 	{
-		//printf("\n size of double = %d", sizeof(double));
-		//printf("\n size of float = %d", sizeof(float));
-		//printf("\n mutation_amplitude = %f", mutation_amplitude);
-
-
 		if (gll % 100 == 0)printf("\nThread %d START", gll);
 
 		m_cl m_cl_gpu;
@@ -147,60 +135,42 @@ void kernel2(	__global	m_cl*			m_cl_global,
 		__private output_type_cl tmp; // private memory, shared only in work item
 		__private change_cl g;
 		output_type_cl_init(&tmp, rand_molec_struc_vec_gpu + gll * (SIZE_OF_MOLEC_STRUC / sizeof(float)));
-		//printf("\n lig_torsion_size = %f", tmp.lig_torsion_size);
-		
 		g.lig_torsion_size = tmp.lig_torsion_size;
-		//print_ouput_type(&tmp, tmp.lig_torsion_size);//测试
-		//测试
-		//printf("\n g lig_torsion_size = %f", g.lig_torsion_size);
 
 		// BFGS
 		output_type_cl best_out;
 		output_type_cl candidate;
 
 		for (int step = 0; step < search_depth; step++) {
-			//printf("\n gx = %d, step = %d", gx, step);
-			//printf("\n tmp lig_torsion = %f", tmp.lig_torsion_size);
 			output_type_cl_init_with_output(&candidate, &tmp);
-			//printf("\n candidate lig_torsion = %f", candidate.lig_torsion_size);
-			//print_ouput_type(&candidate, tmp.lig_torsion_size);//测试
 
-			int map_index = (step + gll * search_depth) % MAX_NUM_OF_RANDOM_MAP;// 复用random map
-			mutate_conf_cl(map_index,
-				num_steps,
-				&candidate,
-				rand_maps_gpu->int_map,
-				rand_maps_gpu->sphere_map,
-				rand_maps_gpu->pi_map,
-				m_cl_gpu.ligand.begin,
-				m_cl_gpu.ligand.end,
-				m_cl_gpu.atoms,
-				&m_cl_gpu.m_coords,
-				m_cl_gpu.ligand.rigid.origin[0],
-				epsilon_fl,
-				mutation_amplitude
+			int map_index = (step + gll * search_depth) % MAX_NUM_OF_RANDOM_MAP;
+			mutate_conf_cl(	map_index,
+							num_steps,
+							&candidate,
+							rand_maps_gpu->int_map,
+							rand_maps_gpu->sphere_map,
+							rand_maps_gpu->pi_map,
+							m_cl_gpu.ligand.begin,
+							m_cl_gpu.ligand.end,
+							m_cl_gpu.atoms,
+							&m_cl_gpu.m_coords,
+							m_cl_gpu.ligand.rigid.origin[0],
+							epsilon_fl,
+							mutation_amplitude
 			);
-			//print_ouput_type(&candidate, candidate.lig_torsion_size);//测试
 
-			float e_before = candidate.e;
-			
-			bfgs(&candidate,
-				&g,
-				&m_cl_gpu,
-				p_cl_gpu,
-				ig_cl_gpu,
-				hunt_cap_gpu,
-				epsilon_fl,
-				bfgs_max_steps
+			bfgs(	&candidate,
+					&g,
+					&m_cl_gpu,
+					p_cl_gpu,
+					ig_cl_gpu,
+					hunt_cap_gpu,
+					epsilon_fl,
+					bfgs_max_steps
 			);
-			//printf("\n After Here!");
-			//if(e_before < candidate.e)printf("\n bfgs wrong!");
-
-			//printf("\n candidate.e = %f", candidate.e);
-			
-			
+	
 			float n = generate_n(rand_maps_gpu->pi_map, map_index);
-			if (n > 1 || n < 0)printf("\n generate_n error!");
 			
 			if (step == 0 || metropolis_accept(tmp.e, candidate.e, 1.2, n)) {
 
@@ -210,24 +180,23 @@ void kernel2(	__global	m_cl*			m_cl_global,
 					m_cl_gpu.atoms, m_cl_gpu.m_num_movable_atoms, epsilon_fl);
 				
 				if (tmp.e < best_e) {
-					//精细搜索BFGS
-					bfgs(&tmp,
-						&g,
-						&m_cl_gpu,
-						p_cl_gpu,
-						ig_cl_gpu,
-						authentic_v_gpu,
-						epsilon_fl,
-						bfgs_max_steps
+					bfgs(	&tmp,
+							&g,
+							&m_cl_gpu,
+							p_cl_gpu,
+							ig_cl_gpu,
+							authentic_v_gpu,
+							epsilon_fl,
+							bfgs_max_steps
 					);
-					//if (tmp.e > best_e)printf("\n 精细bfgs wrong!");
+
 					// set
 					if (tmp.e < best_e) {
 						set(&tmp, &m_cl_gpu.ligand.rigid, m_cl_gpu.m_coords.coords,
 							m_cl_gpu.atoms, m_cl_gpu.m_num_movable_atoms, epsilon_fl);
 
-						output_type_cl_init_with_output(&best_out, &tmp); // 存储除了coords以外的数据
-						get_heavy_atom_movable_coords(&best_out, &m_cl_gpu); // 赋值coords
+						output_type_cl_init_with_output(&best_out, &tmp);
+						get_heavy_atom_movable_coords(&best_out, &m_cl_gpu); // get coords
 						best_e = tmp.e;
 					}
 
@@ -236,7 +205,7 @@ void kernel2(	__global	m_cl*			m_cl_global,
 			
 		}
 
-		// 将最优解写回CPU
+		// write the best conformation back to CPU
 		write_back(&results[gll], &best_out);
 		if (gll % 100 == 0)printf("\nThread %d FINISH", gll);
 	}

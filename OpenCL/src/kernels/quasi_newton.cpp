@@ -27,19 +27,18 @@ inline void change_cl_init_with_change(change_cl* g_new, const change_cl* g_old)
 inline void output_type_cl_init(output_type_cl* out, __constant float* ptr); // Function prototype in mutate_conf.cpp
 inline void output_type_cl_init_with_output(output_type_cl* out_new, const output_type_cl* out_old);// Function prototype in mutate_conf.cpp
 
-// 测试
 void print_ouput_type(output_type_cl* x, int torsion_size) {
-	for (int i = 0; i < 3; i++)printf("\n x.position[%d] = %0.16f", i, x->position[i]);
-	for (int i = 0; i < 4; i++)printf("\n x.orientation[%d] = %0.16f", i, x->orientation[i]);
+	for (int i = 0; i < 3; i++)printf("\nx.position[%d] = %0.16f", i, x->position[i]);
+	for (int i = 0; i < 4; i++)printf("\nx.orientation[%d] = %0.16f", i, x->orientation[i]);
 	for (int i = 0; i < torsion_size; i++)printf("\n x.torsion[%d] = %0.16f", i, x->lig_torsion[i]);
 	printf("\n x.torsion_size = %f", x->lig_torsion_size);
 }
-// 测试
+
 void print_change(change_cl* g, int torsion_size) {
-	for (int i = 0; i < 3; i++)printf("\n g.position[%d] = %0.16f", i, g->position[i]);
-	for (int i = 0; i < 3; i++)printf("\n g.orientation[%d] = %0.16f", i, g->orientation[i]);
-	for (int i = 0; i < torsion_size; i++)printf("\n g.torsion[%d] = %0.16f", i, g->lig_torsion[i]);
-	printf("\n g.torsion_size = %f", g->lig_torsion_size);
+	for (int i = 0; i < 3; i++)printf("\ng.position[%d] = %0.16f", i, g->position[i]);
+	for (int i = 0; i < 3; i++)printf("\ng.orientation[%d] = %0.16f", i, g->orientation[i]);
+	for (int i = 0; i < torsion_size; i++)printf("\ng.torsion[%d] = %0.16f", i, g->lig_torsion[i]);
+	printf("\ng.torsion_size = %f", g->lig_torsion_size);
 }
 
 inline int num_atom_types(int atu) {
@@ -48,13 +47,11 @@ inline int num_atom_types(int atu) {
 	case 1: return AD_TYPE_SIZE;
 	case 2: return XS_TYPE_SIZE;
 	case 3: return SY_TYPE_SIZE;
-	default: printf("Kernel1:num_atom_types() ERROR!"); return INFINITY;//替换了assert()
+	default: printf("Kernel1:num_atom_types() ERROR!"); return INFINITY;
 	}
 }
 
 inline void elementwise_product(float* out, const float* a, const float* b) {
-	//double vec[3] = { a[0] * b[0],a[1] * b[1],a[2] * b[2] };
-	//return vec;
 	out[0] = a[0] * b[0];
 	out[1] = a[1] * b[1];
 	out[2] = a[2] * b[2];
@@ -87,9 +84,7 @@ inline void curl_without_deriv(float* e, float v, const float epsilon_fl) {
 	}
 }
 
-//(CHECKED)
-float g_evaluate(	//int								test_index,
-							__constant	grid_cl*	g,
+float g_evaluate(			__constant	grid_cl*	g,
 					const				float*		m_coords,				// double[3]
 					const				float		slope,				// double
 					const				float		v,					// double
@@ -99,50 +94,44 @@ float g_evaluate(	//int								test_index,
 	int m_i = g->m_i;
 	int m_j = g->m_j;
 	int m_k = g->m_k;
-	if(m_i * m_j * m_k == 0)printf("\n kernel2: g_evaluate ERROR!#1");
+	if(m_i * m_j * m_k == 0)printf("\nkernel2: g_evaluate ERROR!#1");
 	float tmp_vec[3] = { m_coords[0] - g->m_init[0],m_coords[1] - g->m_init[1] ,m_coords[2] - g->m_init[2] };
 	float tmp_vec2[3] = { g->m_factor[0],g->m_factor[1] ,g->m_factor[2] };
-
-	//printf("\n tmp_vec = {%f,%f,%f}", tmp_vec[0], tmp_vec[1], tmp_vec[2]);
-	//printf("\n tmp_vec2 = {%f,%f,%f}", tmp_vec2[0], tmp_vec2[1], tmp_vec2[2]);
 	float s[3];
-	elementwise_product(s, tmp_vec, tmp_vec2); // a0*b0    a1*b1  a2*b2   构造数组1   根据类中的数组和输入给数组s赋值
-	//printf("\n s[3] = {%0.16f, %0.16f, %0.16f}", s[0], s[1], s[2]);
-	float miss[3] = { 0,0,0 }; // 构造数组2
-	int region[3]; // 构造数组3
-	int a[3]; // 构造数组4
+	elementwise_product(s, tmp_vec, tmp_vec2); // 
+
+	float miss[3] = { 0,0,0 };
+	int region[3];
+	int a[3];
 	int m_data_dims[3] = { m_i,m_j,m_k };
 	for (int i = 0; i < 3; i++){
-		if (s[i] < 0) {    //根据数组1   给数组1234赋值
-			//printf("In case 1   ");
+		if (s[i] < 0) {
 			miss[i] = -s[i];
 			region[i] = -1;
 			a[i] = 0;
 			s[i] = 0;
 		}
-		else if (s[i] >= g->m_dim_fl_minus_1[i]) {//根据数组1   给数组1234赋值
-			//printf("In case 2   ");
+		else if (s[i] >= g->m_dim_fl_minus_1[i]) {
 			miss[i] = s[i] - g->m_dim_fl_minus_1[i];
 			region[i] = 1;
-			if (m_data_dims[i] < 2)printf("Kernel2: g_evaluate ERROR!#2");
+			if (m_data_dims[i] < 2)printf("\nKernel2: g_evaluate ERROR!#2");
 			a[i] = m_data_dims[i] - 2;
 			s[i] = 1;
 		}
 		else {
-			//printf("In case 3   (int)s[%d] = %d", i, (int)s[i]);
-			region[i] = 0; // now that region is boost::array, it's not initialized
-			a[i] = (int)s[i]; //根据数组1   给数组1234赋值
+			region[i] = 0;
+			a[i] = (int)s[i];
 			s[i] -= a[i];
 		}
-		if (s[i] < 0)printf("Kernel2: g_evaluate ERROR!#3");
-		if (s[i] > 1)printf("Kernel2: g_evaluate ERROR!#4");
-		if (a[i] < 0)printf("Kernel2: g_evaluate ERROR!#5");
-		if (a[i] + 1 >= m_data_dims[i])printf("Kernel2: g_evaluate ERROR!#5");
+		if (s[i] < 0)printf("\nKernel2: g_evaluate ERROR!#3");
+		if (s[i] > 1)printf("\nKernel2: g_evaluate ERROR!#4");
+		if (a[i] < 0)printf("\nKernel2: g_evaluate ERROR!#5");
+		if (a[i] + 1 >= m_data_dims[i])printf("\nKernel2: g_evaluate ERROR!#5");
 	}
 
 	float tmp_m_factor_inv[3] = { g->m_factor_inv[0],g->m_factor_inv[1],g->m_factor_inv[2] };
 	const float penalty = slope * elementwise_product_sum(miss, tmp_m_factor_inv);
-	if (penalty <= -epsilon_fl)printf("Kernel2: g_evaluate ERROR!#6");
+	if (penalty <= -epsilon_fl)printf("\nKernel2: g_evaluate ERROR!#6");
 
 	const int x0 = a[0];
 	const int y0 = a[1];
@@ -152,7 +141,6 @@ float g_evaluate(	//int								test_index,
 	const int y1 = y0 + 1;
 	const int z1 = z0 + 1;
 
-	//printf("\n a[3] = %d %d %d", a[0], a[1], a[2]);
 	const float f000 = access_m_data(g->m_data, m_i, m_j, x0, y0, z0);
 	const float f100 = access_m_data(g->m_data, m_i, m_j, x1, y0, z0);
 	const float f010 = access_m_data(g->m_data, m_i, m_j, x0, y1, z0);
@@ -171,8 +159,6 @@ float g_evaluate(	//int								test_index,
 	const float my = 1 - y;
 	const float mz = 1 - z;
 
-	//printf("\n mx my mz = %f %f %f", mx, my, mz);
-	//printf("\n f00 :%f %f %f %f %f %f %f %f", f000, f100, f010, f110, f001, f101, f011, f111);
 	float f =
 		f000 * mx * my * mz +
 		f100 * x  * my * mz +
@@ -183,7 +169,7 @@ float g_evaluate(	//int								test_index,
 		f011 * mx * y  * z	+
 		f111 * x  * y  * z  ;
 
-	if (deriv) { // valid pointer  有指针类型参数
+	if (deriv) { // valid pointer
 		const float x_g =
 			f000 * (-1) * my * mz +
 			f100 *   1  * my * mz +
@@ -218,19 +204,18 @@ float g_evaluate(	//int								test_index,
 
 		float gradient[3] = { x_g, y_g, z_g };
 
-		curl_with_deriv(&f, gradient, v, epsilon_fl);//改变f和gradient
+		curl_with_deriv(&f, gradient, v, epsilon_fl);
 
 		float gradient_everywhere[3];
 
-		for (int i = 0; i < 3; i++) {//改变deriv对应的值
+		for (int i = 0; i < 3; i++) {
 			gradient_everywhere[i] = ((region[i] == 0) ? gradient[i] : 0);
 			deriv[i] = g->m_factor[i] * gradient_everywhere[i] + slope * region[i];
 		}
-		//printf("\n Before e: f = %f, penaty = %f", f, penalty);
-		return f + penalty;//返回输出
+		return f + penalty;
 	}	
-	else {  //无输入指针类型参数
-		printf("\n Wrong!!!!!!!!!!!!!!Kernel2: g_evaluate ERROR!#7");
+	else {  // none valid pointer
+		printf("\nKernel2: g_evaluate ERROR!#7");
 		curl_without_deriv(&f, v, epsilon_fl);
 		return f + penalty;
 	}
@@ -253,16 +238,9 @@ float ig_eval_deriv(						output_type_cl*		x,
 			continue;
 		}
 		float deriv[3];
-		float m_init[3] = { ig_cl_gpu->grids[t].m_init[0], ig_cl_gpu->grids[t].m_init[1], ig_cl_gpu->grids[t].m_init[2] };
-		float m_factor[3] = { ig_cl_gpu->grids[t].m_factor[0], ig_cl_gpu->grids[t].m_factor[1], ig_cl_gpu->grids[t].m_factor[2] };
-		__constant float* m_data = ig_cl_gpu->grids[t].m_data;
-		
-		__constant float* m_dim_fl_minus_1 = ig_cl_gpu->grids[t].m_dim_fl_minus_1;
-		__constant float* m_factor_inv = ig_cl_gpu->grids[t].m_factor_inv;
 
 		e = e + g_evaluate(&ig_cl_gpu->grids[t], m_cl_gpu->m_coords.coords[i], ig_cl_gpu->slope, v, deriv, epsilon_fl);
 
-		//printf("\n Each e = %f", e);
 		for (int j = 0; j < 3; j++) m_cl_gpu->minus_forces.coords[i][j] = deriv[j];
 	}
 	return e;
@@ -301,8 +279,6 @@ inline void quaternion_to_r3(const float* q, float* orientation_m) {
 	matrix_set_element(&tmp, 3, 2, 0, 2 *	(-ac + bd)			);
 	matrix_set_element(&tmp, 3, 2, 1, 2 *	(ab + cd)			);
 	matrix_set_element(&tmp, 3, 2, 2,		(aa - bb - cc + dd)	);
-
-	//for (int i = 0; i < 9; i++)printf("\n tmp[%d] = %.16f", i, tmp.data[i]);
 
 	for (int i = 0; i < 9; i++) orientation_m[i] = tmp.data[i];
 }
@@ -345,7 +321,7 @@ inline void angle_to_quaternion2(				float*		out,
 									const		float*		axis,
 												float		angle
 ) {
-	if (norm3(axis) - 1 >= 0.001)printf("\n kernel2: angle_to_quaternion() ERROR!"); // Replace assert(eq(axis.norm(), 1));
+	if (norm3(axis) - 1 >= 0.001)printf("\nkernel2: angle_to_quaternion() ERROR!"); // Replace assert(eq(axis.norm(), 1));
 	normalize_angle(&angle);
 	float c = cos(angle / 2);
 	float s = sin(angle / 2);
@@ -355,8 +331,6 @@ inline void angle_to_quaternion2(				float*		out,
 	out[3] = s * axis[2];
 }
 
-
-//(CHECKED)
 void set(	const				output_type_cl* x,
 								rigid_cl*		lig_rigid_gpu,
 								m_coords_cl*		m_coords_gpu,	
@@ -376,8 +350,8 @@ void set(	const				output_type_cl* x,
 	}
 	//************** end node.set_conf **************//
 
-	//************** branches_set_conf **************// (CHECKED)
-	//按照深度优先的顺序更新node
+	//************** branches_set_conf **************//
+	//update nodes in depth-first order
 	for (int current = 1; current < lig_rigid_gpu->num_children + 1; current++) { // current starts from 1 (namely starts from first child node)
 		int parent = lig_rigid_gpu->parent[current];
 		float torsion = x->lig_torsion[current - 1]; // torsions are all related to child nodes
@@ -402,15 +376,6 @@ void set(	const				output_type_cl* x,
 		angle_to_quaternion2(tmp, current_axis, torsion);
 		angle_to_quaternion_multi(tmp, parent_q);
 		quaternion_normalize_approx(tmp, epsilon_fl);
-		//测试tmp
-		//if (current == 8) {
-		//	for (int k = 0; k < 4; k++)printf("\ntmp[%d] = %.16f", k, tmp[k]);
-		//	for (int k = 0; k < 3; k++)printf("\nparent_origin[%d][%d] = %.16f", parent, k, lig_rigid_gpu->origin[parent][k]);
-		//	for (int k = 0; k < 4; k++)printf("\nparent_q[%d] = %.16f", k, parent_q[k]);
-		//	for (int k = 0; k < 3; k++)printf("\ncurrent_axis[%d] = %.16f", k, current_axis[k]);
-		//	for (int k = 0; k < 31; k++)printf("\ntorsion[%d] = %.16f", k, x->lig_torsion[k]);
-		//	printf("\nbegin = %d, end = %d", lig_rigid_gpu->atom_range[current][0], lig_rigid_gpu->atom_range[current][1]);
-		//}
 
 		for (int i = 0; i < 4; i++) lig_rigid_gpu->orientation_q[current][i] = tmp[i]; // set orientation_q
 		quaternion_to_r3(lig_rigid_gpu->orientation_q[current], lig_rigid_gpu->orientation_m[current]); // set orientation_m
@@ -419,35 +384,12 @@ void set(	const				output_type_cl* x,
 		begin = lig_rigid_gpu->atom_range[current][0];
 		end =	lig_rigid_gpu->atom_range[current][1];
 		for (int i = begin; i < end; i++) {
-			//测试
-			//if (i == 25) {
-			//	for (int k = 0; k < 3; k++)printf("\nlig_rigid_gpu->origin[%d][%d] = %.16f", current, k, lig_rigid_gpu->origin[current][k]);
-			//	for (int k = 0; k < 3; k++)printf("\natoms_coords_gpu[%d][%d] = %.16f", i, k, atoms_coords_gpu[3 * i + k]);
-			//	for (int k = 0; k < 9; k++)printf("\norientation_m[%d][%d] = %.16f", current, k, lig_rigid_gpu->orientation_m[current][k]);
-			//}
-			
-			
 			local_to_lab(m_coords_gpu->coords[i], lig_rigid_gpu->origin[current], &atoms[i].coords, lig_rigid_gpu->orientation_m[current]);
 		}
 	}
 	//************** end branches_set_conf **************//
-	//printf("\n Set() is done!!!!!!!!!!!");
-	//for (int i = 0; i < 15; i++) {
-	//	for (int k = 0; k < 3; k++)printf("\nm_coords_gpu[%d][%d] = %.16f", i, k, m_coords_gpu[3 * i + k]);
-	//}
-	//for (int i = 0; i < 15; i++) {
-	//	for (int k = 0; k < 3; k++)printf("\natoms_coords[%d][%d] = %.16f", i, k, atoms_coords_gpu[3 * i + k]);
-	//}
-	//for (int i = 0; i < lig_rigid_gpu->num_children + 1; i++) {
-	//	for (int k = 0; k < 9; k++)printf("\nlig_rigid_gpu->orientation_m[%d[%d] = %.16f", i, k, lig_rigid_gpu->orientation_m[i][k]);
-	//}
-	//for (int i = 0; i < lig_rigid_gpu->num_children + 1; i++) {
-	//	for (int k = 0; k < 3; k++)printf("\nlig_rigid_gpu->origin[%d[%d] = %.16f", i, k, lig_rigid_gpu->origin[i][k]);
-	//}
 }
 
-
-//(CHECKED)
 void p_eval_deriv(						float*		out,
 										int			type_pair_index,
 										float		r2,
@@ -455,17 +397,17 @@ void p_eval_deriv(						float*		out,
 					const				float		epsilon_fl
 ) {
 	const float cutoff_sqr = p_cl_gpu->m_cutoff_sqr;
-	if(r2 > cutoff_sqr) printf("\n kernel2: p_eval_deriv() ERROR!");
+	if(r2 > cutoff_sqr) printf("\nkernel2: p_eval_deriv() ERROR!");
 	__constant p_m_data_cl* tmp = &p_cl_gpu->m_data[type_pair_index];
 	float r2_factored = tmp->factor * r2;
-	if (r2_factored + 1 >= SMOOTH_SIZE) printf("\n kernel2: p_eval_deriv() ERROR!");
+	if (r2_factored + 1 >= SMOOTH_SIZE) printf("\nkernel2: p_eval_deriv() ERROR!");
 	int i1 = (int)(r2_factored);
 	int i2 = i1 + 1;
 	if (i1 >= SMOOTH_SIZE || i1 < 0)printf("\n kernel2: p_eval_deriv() ERROR!");
-	if (i2 >= SMOOTH_SIZE || i2 < 0)printf("\n kernel2: p_eval_deriv() ERROR!");
+	if (i2 >= SMOOTH_SIZE || i2 < 0)printf("\n : p_eval_deriv() ERROR!");
 	float rem = r2_factored - i1;
-	if (rem < -epsilon_fl)printf("\n kernel2: p_eval_deriv() ERROR!");
-	if (rem >= 1 + epsilon_fl)printf("\n kernel2: p_eval_deriv() ERROR!");
+	if (rem < -epsilon_fl)printf("\nkernel2: p_eval_deriv() ERROR!");
+	if (rem >= 1 + epsilon_fl)printf("\nkernel2: p_eval_deriv() ERROR!");
 	float p1[2] = { tmp->smooth[i1][0], tmp->smooth[i1][1] };
 	float p2[2] = { tmp->smooth[i2][0], tmp->smooth[i2][1] };
 	float e = p1[0] + rem * (p2[0] - p1[0]);
@@ -493,75 +435,25 @@ float eval_interacting_pairs_deriv(		__constant	p_cl*			p_cl_gpu,
 ) {
 	float e = 0;
 
-	//int ip[3];
-	//double coords_b[3];
-	//double coords_a[3];
-	//double r[3];
-	//double r2;
-	//
 	for (int i = 0; i < pairs->num_pairs; i++) {
 		const int ip[3] = { pairs->type_pair_index[i], pairs->a[i] ,pairs->b[i] };
 		float coords_b[3] = { m_coords->coords[ip[2]][0], m_coords->coords[ip[2]][1], m_coords->coords[ip[2]][2] };
 		float coords_a[3] = { m_coords->coords[ip[1]][0], m_coords->coords[ip[1]][1], m_coords->coords[ip[1]][2] };
 		float r[3] = { coords_b[0] - coords_a[0], coords_b[1] - coords_a[1] ,coords_b[2] - coords_a[2] };
 		float r2 = r[0] * r[0] + r[1] * r[1] + r[2] * r[2];
-
-		//ip[0] = pairs->type_pair_index[i]; ip[1] = pairs->a[i]; ip[2] = pairs->b[i];
-		//coords_b[0] = m_coords->coords[ip[2]][0]; coords_b[1] = m_coords->coords[ip[2]][1]; coords_b[2] = m_coords->coords[ip[2]][2];
-		//coords_a[0] = m_coords->coords[ip[1]][0]; coords_a[1] = m_coords->coords[ip[1]][1]; coords_a[2] = m_coords->coords[ip[1]][2];
-		//r[0] = coords_b[0] - coords_a[0]; r[1] = coords_b[1] - coords_a[1]; r[2] = coords_b[2] - coords_a[2];
-		//r2 = r[0] * r[0] + r[1] * r[1] + r[2] * r[2];
-		
-		
-		
+	
 		if (r2 < p_cl_gpu->m_cutoff_sqr) {
 			float tmp[2];
 			p_eval_deriv(tmp, ip[0], r2, p_cl_gpu, epsilon_fl);
 			float force[3] = { r[0] * tmp[1], r[1] * tmp[1] ,r[2] * tmp[1] };
-			//if (i == 0) {
-			//	printf("\nforce = %.16f %.16f %.16f", force[0], force[1], force[2]);
-			//	printf("\n a = %d, b = %d", ip[1], ip[2]);
-			//}
-			
 			curl(&tmp[0], force, v, epsilon_fl);
 			e += tmp[0];
-			//if (i == 0)for (int j = 0; j < 3; j++)printf("\nm_minus_forces_gpu[0][%d] = %.16f", j, m_minus_forces_gpu[j]);
 			for (int j = 0; j < 3; j++)minus_forces->coords[ip[1]][j] -= force[j];
-			///if (i == 0)for (int j = 0; j < 3; j++)printf("\nm_minus_forces_gpu[0][%d] = %.16f", j, m_minus_forces_gpu[j]);
 			for (int j = 0; j < 3; j++)minus_forces->coords[ip[2]][j] += force[j];
 		}
 	}
 	return e;
 }
-
-
-//void sum_force_and_torque(					vecp_cl*	out,
-//											int			node_index,
-//						  const			double*		m_coords_gpu,
-//						  const			double*		m_minus_forces_gpu,
-//										rigid_cl*	lig_rigid_gpu
-//) {
-//	double3 tmp_first = (double3)(0);
-//	double3 tmp_second = (double3)(0);
-//	double3 origin = (double3)(lig_rigid_gpu->origin[node_index][0],
-//		lig_rigid_gpu->origin[node_index][1],
-//		lig_rigid_gpu->origin[node_index][2]);
-//
-//	for (int i = lig_rigid_gpu->atom_range[node_index][0]; i < lig_rigid_gpu->atom_range[node_index][1]; i++) {
-//		double3 forces_i = (double3)(m_minus_forces_gpu[3 * i],
-//			m_minus_forces_gpu[3 * i + 1],
-//			m_minus_forces_gpu[3 * i + 2]);
-//		double3 coords_i = (double3)(m_coords_gpu[3 * i],
-//			m_coords_gpu[3 * i + 1],
-//			m_coords_gpu[3 * i + 2]);
-//
-//		tmp_first += forces_i;
-//		tmp_second += cross(coords_i - origin, forces_i);
-//		//printf("\n i = %d", i);
-//	}
-//	out->first = tmp_first;
-//	out->second = tmp_second;
-//}
 
 inline void product(float* res, const float*a,const float*b) {
 	res[0] = a[1] * b[2] - a[2] * b[1];
@@ -569,29 +461,24 @@ inline void product(float* res, const float*a,const float*b) {
 	res[2] = a[0] * b[1] - a[1] * b[0];
 }
 
-//(CHECKED)
 void POT_deriv(	const					m_minus_forces* minus_forces,
 				const					rigid_cl*		lig_rigid_gpu,
 				const					m_coords_cl*		m_coords,
 										change_cl*		g
 ) {
-	int num_torsion = lig_rigid_gpu->num_children; // 7
-	int num_rigid = num_torsion + 1; // 8
+	int num_torsion = lig_rigid_gpu->num_children;
+	int num_rigid = num_torsion + 1;
 	float position_derivative_tmp[MAX_NUM_OF_RIGID][3];
 	float position_derivative[MAX_NUM_OF_RIGID][3];
 	float orientation_derivative_tmp[MAX_NUM_OF_RIGID][3];
 	float orientation_derivative[MAX_NUM_OF_RIGID][3];
-	float torsion_derivative[MAX_NUM_OF_RIGID]; // 这里的第0个元素没有意义(根节点没有torsion)
-
-	//for (int i = 0; i < 15; i++) {
-	//	for (int k = 0; k < 3; k++)printf("\nm_minus_forces_gpu[%d][%d] = %.16f", i, k, minus_forces->coords[i][k]);
-	//}
+	float torsion_derivative[MAX_NUM_OF_RIGID]; // torsion_derivative[0] has no meaning(root node has no torsion)
 
 	for (int i = 0; i < num_rigid; i++) {
 		int begin = lig_rigid_gpu->atom_range[i][0];
 		int end = lig_rigid_gpu->atom_range[i][1];
-		for (int k = 0; k < 3; k++)position_derivative_tmp[i][k] = 0; // 初始化
-		for (int k = 0; k < 3; k++)orientation_derivative_tmp[i][k] = 0; // 初始化
+		for (int k = 0; k < 3; k++)position_derivative_tmp[i][k] = 0; 
+		for (int k = 0; k < 3; k++)orientation_derivative_tmp[i][k] = 0;
 		for (int j = begin; j < end; j++) {
 			for (int k = 0; k < 3; k++)position_derivative_tmp[i][k] += minus_forces->coords[j][k];
 
@@ -608,22 +495,22 @@ void POT_deriv(	const					m_minus_forces* minus_forces,
 	}
 
 	// position_derivative 
-	for (int i = num_rigid - 1; i >= 0; i--) {// 自下而上的遍历
-		for (int k = 0; k < 3; k++)position_derivative[i][k] = position_derivative_tmp[i][k]; // 自身
-		// 遍历找孩子结点
+	for (int i = num_rigid - 1; i >= 0; i--) {// from bottom to top
+		for (int k = 0; k < 3; k++)position_derivative[i][k] = position_derivative_tmp[i][k]; // self
+		// looking for chidren node
 		for (int j = 0; j < num_rigid; j++) {
 			if (lig_rigid_gpu->children_map[i][j] == true) {
-				for (int k = 0; k < 3; k++)position_derivative[i][k] += position_derivative[j][k]; // 如果有孩子结点:自身+孩子结点
+				for (int k = 0; k < 3; k++)position_derivative[i][k] += position_derivative[j][k]; // self+children node
 			}
 		}
 	}
 
 	// orientation_derivetive
-	for (int i = num_rigid - 1; i >= 0; i--) { // 自下而上的遍历
-		for (int k = 0; k < 3; k++)orientation_derivative[i][k] = orientation_derivative_tmp[i][k]; // 自身
-		// 遍历找孩子结点
+	for (int i = num_rigid - 1; i >= 0; i--) { // from bottom to top
+		for (int k = 0; k < 3; k++)orientation_derivative[i][k] = orientation_derivative_tmp[i][k]; // self
+		// looking for chidren node
 		for (int j = 0; j < num_rigid; j++) {
-			if (lig_rigid_gpu->children_map[i][j] == true) { // 如果有孩子结点:自身+孩子结点+product
+			if (lig_rigid_gpu->children_map[i][j] == true) { // self + children node + product
 				for (int k = 0; k < 3; k++)orientation_derivative[i][k] += orientation_derivative[j][k];
 				float product_out[3];
 				float origin_temp[3] = {	lig_rigid_gpu->origin[j][0] - lig_rigid_gpu->origin[i][0],
@@ -636,7 +523,7 @@ void POT_deriv(	const					m_minus_forces* minus_forces,
 	}
 
 	// torsion_derivative
-	for (int i = num_rigid - 1; i >= 0; i--) { // 自下而上的遍历
+	for (int i = num_rigid - 1; i >= 0; i--) { // from bottom to top
 		float sum = 0;
 		for (int j = 0; j < 3; j++) sum += orientation_derivative[i][j] * lig_rigid_gpu->axis[i][j];
 		torsion_derivative[i] = sum;
@@ -644,7 +531,7 @@ void POT_deriv(	const					m_minus_forces* minus_forces,
 
 	for (int k = 0; k < 3; k++)	g->position[k] = position_derivative[0][k];
 	for (int k = 0; k < 3; k++) g->orientation[k] = orientation_derivative[0][k];
-	for (int k = 0; k < num_torsion; k++) g->lig_torsion[k] = torsion_derivative[k + 1];// 第0个元素代表根节点，无意义
+	for (int k = 0; k < num_torsion; k++) g->lig_torsion[k] = torsion_derivative[k + 1];// no meaning for node 0
 }
 
 
@@ -658,15 +545,6 @@ float m_eval_deriv(					output_type_cl*		c,
 ) {
 	set(c, &m_cl_gpu->ligand.rigid, m_cl_gpu->m_coords.coords, m_cl_gpu->atoms, m_cl_gpu->m_num_movable_atoms, epsilon_fl);
 
-
-	//测试
-	//for (int i = 0; i < 10; i++)for (int j = 0; j < 3; j++) {
-	//	printf("\n m_coords[%d][%d] =%f", i, j, m_cl_gpu->m_coords.coords[i][j]);
-	//}
-
-	//print_change(g, g->lig_torsion_size);
-	//print_ouput_type(c, c->lig_torsion_size);
-	//printf("\n v = %f", v[1]);
 	float e = ig_eval_deriv(	c,
 								g, 
 								v[1],				
@@ -674,7 +552,7 @@ float m_eval_deriv(					output_type_cl*		c,
 								m_cl_gpu,
 								epsilon_fl							
 							);
-	//printf("\n e1 = %f", e);
+	
 	e += eval_interacting_pairs_deriv(	p_cl_gpu,
 										v[0],
 										&m_cl_gpu->ligand.pairs,
@@ -682,8 +560,7 @@ float m_eval_deriv(					output_type_cl*		c,
 										&m_cl_gpu->minus_forces,
 										epsilon_fl
 									);
-	//printf("\n e2 = %f", e);
-	// calculate derivatives (only one ligand, no flex)
+
 	POT_deriv(&m_cl_gpu->minus_forces, &m_cl_gpu->ligand.rigid, &m_cl_gpu->m_coords, g);
 
 	return e;
@@ -697,7 +574,6 @@ inline float find_change_index_read(const change_cl* g, int index) {
 	if (index < 3)return g->orientation[index];
 	index -= 3;
 	if (index < g->lig_torsion_size)return g->lig_torsion[index]; //
-	//printf("\nlig_torsion_size = %.16f", g->lig_torsion_size);
 	printf("\nKernel2:find_change_index_read() ERROR!"); // Shouldn't be here
 }
 
@@ -707,7 +583,6 @@ inline void find_change_index_write(change_cl* g, int index, float data) {
 	if (index < 3) { g->orientation[index] = data; return; }
 	index -= 3;
 	if (index < g->lig_torsion_size) { g->lig_torsion[index] = data; return; } //
-	//printf("\nlig_torsion_size = %.16f", g->lig_torsion_size);
 	printf("\nKernel2:find_change_index_write() ERROR!"); // Shouldn't be here
 }
 
@@ -765,9 +640,6 @@ float line_search(					 	m_cl*				m_cl_gpu,
 
 		output_type_cl_increment(x_new, p, alpha, epsilon_fl);
 
-		//测试
-		//print_ouput_type(x_new, x_new->lig_torsion_size);
-
 		*f1 =  m_eval_deriv(x_new,
 							g_new,
 							m_cl_gpu,
@@ -776,7 +648,6 @@ float line_search(					 	m_cl*				m_cl_gpu,
 							hunt_cap,
 							epsilon_fl
 							);
-		//printf("\n f1 in line search = %f", *f1);
 
 		if (*f1 - f0 < c0 * alpha * pg)
 			break;
@@ -828,9 +699,8 @@ void bfgs(					output_type_cl*			x,
 			const				int					max_steps
 ) 
 {
-	//printf("\n In bfgs!");
-	int n = 3 + 3 + x->lig_torsion_size; // 矩阵维度,没有算上flex
-	//printf("\n n=%f",x->lig_torsion_size);
+	int n = 3 + 3 + x->lig_torsion_size; // the dimensions of matirx
+
 	matrix h;
 	matrix_init(&h, n, 0);
 	matrix_set_diagonal(&h, 1);
@@ -849,7 +719,7 @@ void bfgs(					output_type_cl*			x,
 								hunt_cap,
 								epsilon_fl
 							);
-	//printf("\n f0 = %f", f0);
+
 	float f_orig = f0;
 	// Init g_orig, x_orig
 	change_cl g_orig;
@@ -866,7 +736,6 @@ void bfgs(					output_type_cl*			x,
 	for (int step = 0; step < max_steps; step++) {
 
 		minus_mat_vec_product(&h, g, &p);
-		//print_change(&p, p.lig_torsion_size);
 		float f1 = 0;
 
 		const float alpha = line_search(	m_cl_gpu,
@@ -883,7 +752,7 @@ void bfgs(					output_type_cl*			x,
 											epsilon_fl,
 											hunt_cap
 										);
-		//printf("\n f1 = %0.16f, alpha = %f", f1, alpha);
+
 		change_cl y;
 		change_cl_init_with_change(&y, &g_new);
 		// subtract_change
@@ -901,13 +770,10 @@ void bfgs(					output_type_cl*			x,
 			float yy = scalar_product(&y, &y, n);
 			if (fabs(yy) > epsilon_fl) {
 				matrix_set_diagonal(&h, alpha * scalar_product(&y, &p, n) / yy);
-				//for (int i = 0; i < 91; i++)printf("\nh[%d] = %.16f", i, h.data[i]);
 			}
 		}
 
 		bool h_updated = bfgs_update(&h, &p, &y, alpha, epsilon_fl);
-		//printf("\n\n");
-		//for (int i = 0; i < 91; i++)printf("\nh[%d] = %.16f", i, h.data[i]);
 	}
 
 	if (!(f0 <= f_orig)) {
@@ -918,5 +784,4 @@ void bfgs(					output_type_cl*			x,
 
 	// write output_type_cl energy
 	x->e = f0;
-	//return f0;
 }
