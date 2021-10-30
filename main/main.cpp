@@ -161,6 +161,7 @@ void do_search(model& m, const boost::optional<model>& ref, const scoring_functi
 	conf c = m.get_initial_conf();
 	fl e = max_fl;
 	const vec authentic_v(1000, 1000, 1000);
+	//score_only = true;
 	if (score_only) {
 		fl intramolecular_energy = m.eval_intramolecular(prec, authentic_v, c);
 		naive_non_cache nnc(&prec); // for out of grid issues
@@ -208,13 +209,14 @@ void do_search(model& m, const boost::optional<model>& ref, const scoring_functi
 		done(verbosity, log);
 	}
 	else {
-		//seed = -1111; printf("seed is fixed to -226066464!\n");
+		//seed = -226066464; printf("seed is fixed to -226066464!\n");
 		rng generator(static_cast<rng::result_type>(seed));
 		log << "Using random seed: " << seed;
 		log.endl();
 		output_container out_cont;
 		doing(verbosity, "Performing search", log);
 		par(m, out_cont, prec, ig, prec_widened, ig_widened, corner1, corner2, generator);
+		std::cout << std::endl;
 		done(verbosity, log);
 
 		doing(verbosity, "Refining results", log);
@@ -302,7 +304,16 @@ void main_procedure(model& m, const boost::optional<model>& ref, // m is non-con
 	parallel_mc par;
 	sz heuristic = m.num_movable_atoms() + 10 * m.get_size().num_degrees_of_freedom();
 	par.mc.num_steps = unsigned(70 * 3 * (50 + heuristic) / 2); // 2 * 70 -> 8 * 20 // FIXME
-	par.mc.search_depth = search_depth;// 20210811 Glinttsd
+	//par.mc.search_depth = search_depth;// 20210811 Glinttsd
+	if (search_depth != 0) {
+		par.mc.search_depth = search_depth;
+		assert(search_depth >= 1);
+	}
+	else {
+		par.mc.search_depth = (int) (0.24 * m.num_movable_atoms() + 0.29 * m.get_size().num_degrees_of_freedom() - 5.74);
+		if (par.mc.search_depth < 1) par.mc.search_depth = 1;
+	}
+	std::cout << "Search depth is set to " << par.mc.search_depth << std::endl;
 	par.mc.thread = thread;// 20210811 Glinttsd
 
 	par.mc.ssd_par.evals = unsigned((25 + m.num_movable_atoms()) / 3);
@@ -410,7 +421,7 @@ int main(int argc, char* argv[]) {
 	clock_t start = clock();
 
 	using namespace boost::program_options;
-	const std::string version_string = "VINA-GPU";
+	const std::string version_string = "Vina-GPU";
 	const std::string error_message = "\n\n\
 Please contact the author, Dr. Oleg Trott <ot14@columbia.edu>, so\n\
 that this problem can be resolved. The reproducibility of the\n\
@@ -432,7 +443,7 @@ Thank you!\n";
 
 	const std::string cite_message = "\
 #################################################################\n\
-# If you used VINA-GPU in your work, please cite:               #\n\
+# If you used Vina-GPU in your work, please cite:               #\n\
 #                                                               #\n\
 #Shidi, Tang, Chen Ruiqi, Lin Mengru, Lin Qingde,               #\n\
 #Zhu Yanxiang, Wu Jiansheng, Hu Haifeng, and Ling Ming.         #\n\
@@ -447,7 +458,6 @@ Thank you!\n";
 #                                                               #\n\
 # DOI 10.1002/jcc.21334                                         #\n\
 #                                                               #\n\
-# Please see http://vina.scripps.edu for more information.      #\n\
 #################################################################\n";
 
 	try {
@@ -493,8 +503,8 @@ Thank you!\n";
 			;
 		options_description advanced("Advanced options (see the manual)");
 		advanced.add_options()
-			("thread", value<int>(&thread)->default_value(1000), "the number of computing lanes in VINA-GPU") // 20210811 Glinttsd
-			("search_depth", value<int>(&search_depth)->default_value(1), "the number of search depth in monte carlo") // 20210811 Glinttsd
+			("thread", value<int>(&thread)->default_value(1000), "the number of computing lanes in Vina-GPU") // 20210811 Glinttsd
+			("search_depth", value<int>(&search_depth)->default_value(0), "the number of search depth in monte carlo") // 20210811 Glinttsd
 			//("score_only", bool_switch(&score_only), "score only - search space can be omitted")
 			//("local_only", bool_switch(&local_only), "do local search only")
 			("randomize_only", bool_switch(&randomize_only), "randomize input, attempting to avoid clashes")
@@ -720,14 +730,14 @@ Thank you!\n";
 		return 1;
 	}
 
-	//clock_t end = clock();
+	clock_t end = clock();
 	//std::ofstream file("gpu_runtime.txt", std::ios::app);
 	//if (file.is_open())
 	//{
-	//	file << "GPU total runtime = " << (double)(end - start) / CLOCKS_PER_SEC << std::endl;
+	//	file << "GPU total runtime = " << (double)(end - start) / CLOCKS_PER_SEC << " s" << std::endl;
 	//	file.close();
 	//}
 
-	//std::cout << "GPU total runtime = " << (double)(end - start) / CLOCKS_PER_SEC << " s" << std::endl;
+	std::cout << "Vina-GPU total runtime = " << (double)(end - start) / CLOCKS_PER_SEC << " s" << std::endl;
 	//getchar();
 }
