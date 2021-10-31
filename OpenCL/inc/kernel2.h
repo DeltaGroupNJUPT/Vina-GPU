@@ -20,9 +20,14 @@
 #define MAX_NUM_OF_BFGS_STEPS 64
 #define MAX_NUM_OF_RANDOM_MAP 1000 // not too large (stack overflow!)
 #define GRIDS_SIZE 17
-#define GRID_MI 65//55
-#define GRID_MJ 71//55
-#define GRID_MK 61//81
+
+#define MAX_NUM_OF_GRID_MI 128//55
+#define MAX_NUM_OF_GRID_MJ 128//55
+#define MAX_NUM_OF_GRID_MK 128//81
+
+//#define GRID_MI 65//55
+//#define GRID_MJ 71//55
+//#define GRID_MK 61//81
 #define MAX_P_DATA_M_DATA_SIZE 256
 //#define MAX_NUM_OF_GRID_ATOMS 130
 #define FAST_SIZE 2051
@@ -124,7 +129,7 @@ typedef struct {
 	int m_i;
 	int m_j;
 	int m_k;
-	float m_data [(GRID_MI) * (GRID_MJ) * (GRID_MK)];
+	float m_data [(MAX_NUM_OF_GRID_MI) * (MAX_NUM_OF_GRID_MJ) * (MAX_NUM_OF_GRID_MK)];
 } grid_cl;
 
 typedef struct {

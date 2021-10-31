@@ -370,40 +370,44 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	size_t m_cl_size = sizeof(m_cl);
 
 	// Preparing ig related data
-	ig_cl ig_cl;
-	ig_cl.atu = ig.get_atu(); // atu
-	ig_cl.slope = ig.get_slope(); // slope
+	ig_cl* ig_cl_ptr = (ig_cl*)malloc(sizeof(ig_cl));
+	ig_cl_ptr->atu = ig.get_atu(); // atu
+	ig_cl_ptr->slope = ig.get_slope(); // slope
 	std::vector<grid> tmp_grids = ig.get_grids();
 	int grid_size = tmp_grids.size();
 	assert(GRIDS_SIZE == grid_size); // grid_size has to be 17
 
 	for (int i = 0; i < grid_size; i++) {
 		for (int j = 0; j < 3; j++) {
-		ig_cl.grids[i].m_init[j] = tmp_grids[i].m_init[j];
-		ig_cl.grids[i].m_factor[j] = tmp_grids[i].m_factor[j];
-		ig_cl.grids[i].m_dim_fl_minus_1[j] = tmp_grids[i].m_dim_fl_minus_1[j];
-		ig_cl.grids[i].m_factor_inv[j] = tmp_grids[i].m_factor_inv[j];
+			ig_cl_ptr->grids[i].m_init[j] = tmp_grids[i].m_init[j];
+			ig_cl_ptr->grids[i].m_factor[j] = tmp_grids[i].m_factor[j];
+			ig_cl_ptr->grids[i].m_dim_fl_minus_1[j] = tmp_grids[i].m_dim_fl_minus_1[j];
+			ig_cl_ptr->grids[i].m_factor_inv[j] = tmp_grids[i].m_factor_inv[j];
 		}
 		if (tmp_grids[i].m_data.dim0() != 0) {
-			ig_cl.grids[i].m_i = tmp_grids[i].m_data.dim0(); assert(GRID_MI == ig_cl.grids[i].m_i);
-			ig_cl.grids[i].m_j = tmp_grids[i].m_data.dim1(); assert(GRID_MJ == ig_cl.grids[i].m_j);
-			ig_cl.grids[i].m_k = tmp_grids[i].m_data.dim2(); assert(GRID_MK == ig_cl.grids[i].m_k);
-			
-			for (int j = 0; j < GRID_MI * GRID_MJ * GRID_MK; j++) {
-				ig_cl.grids[i].m_data[j] = tmp_grids[i].m_data.m_data[j];
+			ig_cl_ptr->grids[i].m_i = tmp_grids[i].m_data.dim0(); assert(MAX_NUM_OF_GRID_MI >= ig_cl_ptr->grids[i].m_i);
+			ig_cl_ptr->grids[i].m_j = tmp_grids[i].m_data.dim1(); assert(MAX_NUM_OF_GRID_MJ >= ig_cl_ptr->grids[i].m_j);
+			ig_cl_ptr->grids[i].m_k = tmp_grids[i].m_data.dim2(); assert(MAX_NUM_OF_GRID_MK >= ig_cl_ptr->grids[i].m_k);
+
+			for (int j = 0; j < ig_cl_ptr->grids[i].m_i * ig_cl_ptr->grids[i].m_j * ig_cl_ptr->grids[i].m_k; j++) {
+				ig_cl_ptr->grids[i].m_data[j] = tmp_grids[i].m_data.m_data[j];
 			}
 		}
 		else {
-			ig_cl.grids[i].m_i = 0;
-			ig_cl.grids[i].m_j = 0;
-			ig_cl.grids[i].m_k = 0;
+			ig_cl_ptr->grids[i].m_i = 0;
+			ig_cl_ptr->grids[i].m_j = 0;
+			ig_cl_ptr->grids[i].m_k = 0;
 		}
 	}
-	size_t ig_cl_size = sizeof(ig_cl);
+	size_t ig_cl_size = sizeof(*ig_cl_ptr);
 
 	// Generating exhaustiveness random ligand structures
-	std::vector<output_type_cl> rand_molec_struc_vec; 
-	rand_molec_struc_vec.resize(thread);
+	std::vector<output_type_cl*> rand_molec_struc_vec; rand_molec_struc_vec.resize(thread);
+	for (int i = 0; i < thread; i++) {
+		rand_molec_struc_vec[i] = (output_type_cl*)malloc(sizeof(output_type_cl));
+	}
+	//std::vector<output_type_cl> rand_molec_struc_vec; 
+	//rand_molec_struc_vec.resize(thread);
 	int lig_torsion_size = tmp.c.ligands[0].torsions.size();
 	int flex_torsion_size; if (tmp.c.flex.size() != 0) flex_torsion_size = tmp.c.flex[0].torsions.size(); else flex_torsion_size = 0;
 	std::vector<vec> uniform_data;
@@ -414,18 +418,18 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 		//Generate positions with uniform probability
 		//generate_uniform_position(corner1, corner2, uniform_data, exhaustiveness);
 		//for (int j = 0; j < 3; j++) rand_molec_struc_vec[i].position[j] = uniform_data[i].data[j];
-		for (int j = 0; j < 3; j++) rand_molec_struc_vec[i].position[j] = tmp.c.ligands[0].rigid.position[j];
+		for (int j = 0; j < 3; j++) rand_molec_struc_vec[i]->position[j] = tmp.c.ligands[0].rigid.position[j];
 		assert(lig_torsion_size < MAX_NUM_OF_LIG_TORSION);
-		for (int j = 0; j < lig_torsion_size; j++) rand_molec_struc_vec[i].lig_torsion[j] = tmp.c.ligands[0].torsions[j];// Only support one ligand
+		for (int j = 0; j < lig_torsion_size; j++) rand_molec_struc_vec[i]->lig_torsion[j] = tmp.c.ligands[0].torsions[j];// Only support one ligand
 		assert(flex_torsion_size < MAX_NUM_OF_FLEX_TORSION);
-		for (int j = 0; j < flex_torsion_size; j++) rand_molec_struc_vec[i].flex_torsion[j] = tmp.c.flex[0].torsions[j];// Only support one flex
+		for (int j = 0; j < flex_torsion_size; j++) rand_molec_struc_vec[i]->flex_torsion[j] = tmp.c.flex[0].torsions[j];// Only support one flex
 
-		rand_molec_struc_vec[i].orientation[0] = (float)tmp.c.ligands[0].rigid.orientation.R_component_1();
-		rand_molec_struc_vec[i].orientation[1] = (float)tmp.c.ligands[0].rigid.orientation.R_component_2();
-		rand_molec_struc_vec[i].orientation[2] = (float)tmp.c.ligands[0].rigid.orientation.R_component_3();
-		rand_molec_struc_vec[i].orientation[3] = (float)tmp.c.ligands[0].rigid.orientation.R_component_4();
+		rand_molec_struc_vec[i]->orientation[0] = (float)tmp.c.ligands[0].rigid.orientation.R_component_1();
+		rand_molec_struc_vec[i]->orientation[1] = (float)tmp.c.ligands[0].rigid.orientation.R_component_2();
+		rand_molec_struc_vec[i]->orientation[2] = (float)tmp.c.ligands[0].rigid.orientation.R_component_3();
+		rand_molec_struc_vec[i]->orientation[3] = (float)tmp.c.ligands[0].rigid.orientation.R_component_4();
 
-		rand_molec_struc_vec[i].lig_torsion_size = lig_torsion_size;
+		rand_molec_struc_vec[i]->lig_torsion_size = lig_torsion_size;
 	}
 
 	// Preaparing p related data
@@ -449,18 +453,18 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	size_t p_cl_size = sizeof(p_cl);
 
 	// Generate random maps
-	random_maps rand_maps;
+	random_maps* rand_maps = (random_maps*)malloc(sizeof(random_maps));
 	for (int i = 0; i < MAX_NUM_OF_RANDOM_MAP; i++) {
-		rand_maps.int_map[i] = random_int(0, int(lig_torsion_size), generator_vec[0]);
-		rand_maps.pi_map[i] = random_fl(-pi, pi, generator_vec[0]);
+		rand_maps->int_map[i] = random_int(0, int(lig_torsion_size), generator_vec[0]);
+		rand_maps->pi_map[i] = random_fl(-pi, pi, generator_vec[0]);
 	}
 	for (int i = 0; i < MAX_NUM_OF_RANDOM_MAP; i++) {
 		vec rand_coords = random_inside_sphere(generator_vec[0]);
 		for (int j = 0; j < 3 ; j ++) {
-			rand_maps.sphere_map[i][j] = rand_coords[j];
+			rand_maps->sphere_map[i][j] = rand_coords[j];
 		}
 	}
-	size_t rand_maps_size = sizeof(rand_maps);
+	size_t rand_maps_size = sizeof(*rand_maps);
 
 
 	float hunt_cap_float[3] = {hunt_cap[0], hunt_cap[1], hunt_cap[2]};
@@ -474,11 +478,11 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	cl_mem rand_molec_struc_vec_gpu;
 	CreateDeviceBuffer(&rand_molec_struc_vec_gpu, CL_MEM_READ_ONLY, thread* SIZE_OF_MOLEC_STRUC, context);
 	for (int i = 0; i < thread; i++) {
-		std::vector<float> pos(rand_molec_struc_vec[i].position, rand_molec_struc_vec[i].position + 3);
-		std::vector<float> ori(rand_molec_struc_vec[i].orientation, rand_molec_struc_vec[i].orientation + 4);
-		std::vector<float> lig_tor(rand_molec_struc_vec[i].lig_torsion, rand_molec_struc_vec[i].lig_torsion + MAX_NUM_OF_LIG_TORSION);
-		std::vector<float> flex_tor(rand_molec_struc_vec[i].flex_torsion, rand_molec_struc_vec[i].flex_torsion + MAX_NUM_OF_FLEX_TORSION);
-		float lig_tor_size = rand_molec_struc_vec[i].lig_torsion_size;
+		std::vector<float> pos(rand_molec_struc_vec[i]->position, rand_molec_struc_vec[i]->position + 3);
+		std::vector<float> ori(rand_molec_struc_vec[i]->orientation, rand_molec_struc_vec[i]->orientation + 4);
+		std::vector<float> lig_tor(rand_molec_struc_vec[i]->lig_torsion, rand_molec_struc_vec[i]->lig_torsion + MAX_NUM_OF_LIG_TORSION);
+		std::vector<float> flex_tor(rand_molec_struc_vec[i]->flex_torsion, rand_molec_struc_vec[i]->flex_torsion + MAX_NUM_OF_FLEX_TORSION);
+		float lig_tor_size = rand_molec_struc_vec[i]->lig_torsion_size;
 		err = clEnqueueWriteBuffer(	queue, rand_molec_struc_vec_gpu, false, i * SIZE_OF_MOLEC_STRUC,
 									pos.size() * sizeof(float), pos.data(), 0, NULL, NULL); checkErr(err);
 		err = clEnqueueWriteBuffer(	queue, rand_molec_struc_vec_gpu, false, i * SIZE_OF_MOLEC_STRUC + pos.size() * sizeof(float),
@@ -497,7 +501,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 
 	cl_mem rand_maps_gpu;
 	CreateDeviceBuffer(&rand_maps_gpu, CL_MEM_READ_ONLY, rand_maps_size, context);
-	err = clEnqueueWriteBuffer(	queue, rand_maps_gpu, false, 0,	rand_maps_size, &rand_maps, 0, NULL, NULL); checkErr(err);
+	err = clEnqueueWriteBuffer(	queue, rand_maps_gpu, false, 0,	rand_maps_size, rand_maps, 0, NULL, NULL); checkErr(err);
 
 	cl_mem hunt_cap_gpu;
 	CreateDeviceBuffer(&hunt_cap_gpu, CL_MEM_READ_ONLY, 3 * sizeof(float), context);
@@ -516,7 +520,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	// Preparing ig related data (cache related data)
 	cl_mem ig_cl_gpu;
 	CreateDeviceBuffer(&ig_cl_gpu, CL_MEM_READ_ONLY, ig_cl_size, context);
-	err = clEnqueueWriteBuffer(queue, ig_cl_gpu, false, 0, ig_cl_size, &ig_cl, 0, NULL, NULL); checkErr(err);
+	err = clEnqueueWriteBuffer(queue, ig_cl_gpu, false, 0, ig_cl_size, ig_cl_ptr, 0, NULL, NULL); checkErr(err);
 
 	cl_mem authentic_v_gpu;
 	CreateDeviceBuffer(&authentic_v_gpu, CL_MEM_READ_ONLY, 3 * sizeof(float), context);
@@ -558,7 +562,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	clWaitForEvents(1, &monte_clarlo_cl);
 
 	// Maping result data
-	output_type_cl* result_ptr = (output_type_cl*)clEnqueueMapBuffer(queue, results, CL_TRUE, CL_MAP_READ, 
+ 	output_type_cl* result_ptr = (output_type_cl*)clEnqueueMapBuffer(queue, results, CL_TRUE, CL_MAP_READ, 
 																	0, thread * sizeof(output_type_cl),
 																	0, NULL, NULL, &err); checkErr(err);
 
@@ -588,6 +592,9 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	err = clReleaseMemObject(authentic_v_gpu); checkErr(err);
 	err = clReleaseMemObject(results); checkErr(err);
 
+	free(ig_cl_ptr);
+	free(rand_maps);
+	for (int i = 0; i < thread; i++)free(rand_molec_struc_vec[i]);
 #ifdef DISPLAY_ANALYSIS
 	// Output Analysis
 	cl_ulong time_start, time_end;

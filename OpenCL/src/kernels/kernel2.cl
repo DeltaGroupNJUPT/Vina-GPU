@@ -136,7 +136,6 @@ void kernel2(	__global	m_cl*			m_cl_global,
 		__private change_cl g;
 		output_type_cl_init(&tmp, rand_molec_struc_vec_gpu + gll * (SIZE_OF_MOLEC_STRUC / sizeof(float)));
 		g.lig_torsion_size = tmp.lig_torsion_size;
-
 		// BFGS
 		output_type_cl best_out;
 		output_type_cl candidate;
@@ -159,7 +158,7 @@ void kernel2(	__global	m_cl*			m_cl_global,
 							epsilon_fl,
 							mutation_amplitude
 			);
-
+			
 			bfgs(	&candidate,
 					&g,
 					&m_cl_gpu,
@@ -169,7 +168,7 @@ void kernel2(	__global	m_cl*			m_cl_global,
 					epsilon_fl,
 					bfgs_max_steps
 			);
-	
+			
 			float n = generate_n(rand_maps_gpu->pi_map, map_index);
 			
 			if (step == 0 || metropolis_accept(tmp.e, candidate.e, 1.2, n)) {
@@ -189,7 +188,6 @@ void kernel2(	__global	m_cl*			m_cl_global,
 							epsilon_fl,
 							bfgs_max_steps
 					);
-
 					// set
 					if (tmp.e < best_e) {
 						set(&tmp, &m_cl_gpu.ligand.rigid, m_cl_gpu.m_coords.coords,

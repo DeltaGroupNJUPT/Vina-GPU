@@ -295,7 +295,7 @@ bool cache::m_data_check(const szv_grid ig)const {
 			||	max_m_data_size <= MAX_NUM_OF_EVERY_M_DATA_ELEMENT);
 	//end Check
 }
-
+#ifdef OPENCL_PART_1
 void cache::populate_cl(const model& m, const precalculate& p, const szv& atom_types_needed, bool display_progress) {
 /**************************************************************************/
 /***************************    OpenCL Init    ****************************/
@@ -581,3 +581,4 @@ void cache::populate_cl(const model& m, const precalculate& p, const szv& atom_t
 	printf("\n GPU cache runtime = %0.16f s\n", (total_time / 1000000000.0));
 #endif
 }
+#endif
