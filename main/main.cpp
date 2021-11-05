@@ -49,7 +49,8 @@
 using boost::filesystem::path;
 
 path make_path(const std::string& str) {
-	return path(str, boost::filesystem::native);
+	//return path(str, boost::filesystem::native);
+	return path(str);
 }
 
 void doing(int verbosity, const std::string& str, tee& log) {

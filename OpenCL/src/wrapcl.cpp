@@ -11,6 +11,7 @@ void checkErr(cl_int err) {
         //printf("Success!");
         //printf(" - ");
     }
+    //assert(err == CL_SUCCESS);
     fflush(stdout);
 }
 
@@ -66,7 +67,7 @@ void read_file(char** program_file, size_t* program_size, std::string file_path)
         *program_size = size+1;
         return;
     }
-   printf("Error: failed to open file\n: %s", file_path);
+   printf("Error: failed to open file\n: %s", file_path.data());
 }
 
 
@@ -122,18 +123,17 @@ void SetupDevice(cl_platform_id* platforms, cl_device_id** devices, cl_int gpu_p
     err = clGetDeviceIDs(platforms[N], CL_DEVICE_TYPE_GPU, num_device, *devices, NULL); checkErr(err);
 #ifdef DISPLAY_ADDITION_INFO
     //Display devices info
-    //for (int i = 0; i < num_device; i++) {
-    //    err = clGetDeviceInfo((*devices)[i], CL_DEVICE_NAME, 0, NULL, &device_name_size); checkErr(err);
-    //    char* device_name = (char*)malloc(sizeof(char) * device_name_size);
-    //    err = clGetDeviceInfo((*devices)[i], CL_DEVICE_NAME, device_name_size, device_name, NULL);
-    //    printf("\nPlatform %d device name:%s\n", N, device_name);
+    for (int i = 0; i < num_device; i++) {
+        err = clGetDeviceInfo((*devices)[i], CL_DEVICE_NAME, 0, NULL, &device_name_size); checkErr(err);
+        char* device_name = (char*)malloc(sizeof(char) * device_name_size);
+        err = clGetDeviceInfo((*devices)[i], CL_DEVICE_NAME, device_name_size, device_name, NULL);
+        printf("\nPlatform %d device name:%s\n", N, device_name);
 
-    //    err = clGetDeviceInfo((*devices)[i], CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(cl_ulong), &mem_size, NULL);
-    //    printf("\nPlatform %d global memory size:%f GB\n", N, (double)mem_size/1000000000);
-
-    //    err = clGetDeviceInfo((*devices)[i], CL_DEVICE_LOCAL_MEM_SIZE, sizeof(cl_ulong), &mem_size, NULL);
-    //    printf("\nPlatform %d local memory size:%f KB\n", N, (double)mem_size / 1000);
-    //}
+        err = clGetDeviceInfo((*devices)[i], CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(cl_ulong), &mem_size, NULL);
+        printf("\nPlatform %d global memory size:%f GB\n", N, (double)mem_size/1000000000);
+        err = clGetDeviceInfo((*devices)[i], CL_DEVICE_LOCAL_MEM_SIZE, sizeof(cl_ulong), &mem_size, NULL);
+        printf("\nPlatform %d local memory size:%f KB\n", N, (double)mem_size / 1000);
+    }
     //初始化第二个平台的设备信息
     //err = clGetDeviceIDs(platforms[1], CL_DEVICE_TYPE_CPU, 0, NULL, &num_device);checkErr(err);
     //*devices = (cl_device_id*)malloc(sizeof(cl_device_id)*num_device);

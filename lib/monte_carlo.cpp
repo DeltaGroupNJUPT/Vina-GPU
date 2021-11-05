@@ -91,7 +91,7 @@ std::vector<output_type> monte_carlo::cl_to_vina(output_type_cl result_ptr[], in
 		// Orientation
 		qt q(tmp_cl.orientation[0], tmp_cl.orientation[1], tmp_cl.orientation[2], tmp_cl.orientation[3]);
 		tmp_c.ligands[0].rigid.orientation = q;
-		// ¹¹Ôìoutput_type
+		// ï¿½ï¿½ï¿½ï¿½output_type
 		output_type tmp_vina(tmp_c, tmp_cl.e);
 		// torsion
 		for (int j = 0; j < tmp_cl.lig_torsion_size; j++)tmp_vina.c.ligands[0].torsions.push_back(tmp_cl.lig_torsion[j]);
@@ -135,7 +135,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	quasi_newton quasi_newton_par; quasi_newton_par.max_steps = ssd_par.evals;
 	output_type origin = tmp;
 #ifdef DATA_DISTRIBUTION_TEST
-	// ÓÃÓÚ´æ´¢ÊµÑéÊý¾Ý
+	// ï¿½ï¿½ï¿½Ú´æ´¢Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	std::fstream f1;
 	f1.open("data_distri_exauh8_loop_21945_1.txt", std::ios::app | std::ios::in);
 #endif
@@ -148,7 +148,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 			output_type candidate = tmp;
 			mutate_conf(candidate.c, m, mutation_amplitude, generator);
 #ifdef DATA_DISTRIBUTION_TEST
-			// Ð´ÈëÊµÑéÊý¾Ý
+			// Ð´ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			for (int i = 0; i < 3; i++)f1 << candidate.c.ligands[0].rigid.position[i] << " ";
 			f1 << candidate.c.ligands[0].rigid.orientation.R_component_1() << " ";
 			f1 << candidate.c.ligands[0].rigid.orientation.R_component_2() << " ";
@@ -200,7 +200,6 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	cl_program program_cl;
 	cl_program program;
 	size_t program_size;
-
 	//Read kernel source code
 #ifdef BUILD_KERNEL_FROM_SOURCE
 	const std::string default_work_path = ".";
@@ -236,12 +235,10 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	cl_kernel kernels[1];
 	char kernel_name[][50] = { "kernel2" };
 	SetupKernel(kernels, program_cl, 1, kernel_name);
-
-	int max_wg_size; // max work item within one work group
-	int max_wi_size[3]; // max work item within each dimension(global)
-	err = clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(int), &max_wg_size, NULL); checkErr(err);
-	err = clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_ITEM_SIZES, 3 * sizeof(int), &max_wi_size, NULL); checkErr(err);
-	
+	size_t max_wg_size; // max work item within one work group
+	size_t max_wi_size[3]; // max work item within each dimension(global)
+	err = clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &max_wg_size, NULL); checkErr(err);
+	err = clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_ITEM_SIZES, 3 * sizeof(size_t), &max_wi_size, NULL); checkErr(err);
 	/**************************************************************************/
 	/*********    Generate random seeds (depend on exhaustiveness)    *********/
 	/**************************************************************************/
@@ -261,7 +258,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	conf_size s = m.get_size();
 	change g(s);
 	output_type tmp(s, 0);
-	quasi_newton quasi_newton_par; const size_t quasi_newton_par_max_steps = ssd_par.evals;
+	quasi_newton quasi_newton_par; const int quasi_newton_par_max_steps = ssd_par.evals;
 
 	/**************************************************************************/
 	/************************    Allocate CPU memory    ***********************/
@@ -531,6 +528,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	CreateDeviceBuffer(&results, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, thread * sizeof(output_type_cl), context);
 	
 	clFinish(queue);
+
 	/**************************************************************************/
 	/************************   Set kernel arguments    ***********************/
 	/**************************************************************************/
@@ -539,23 +537,22 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	SetKernelArg(kernels[0], 2, sizeof(cl_mem),		&p_cl_gpu);
 	SetKernelArg(kernels[0], 3,	sizeof(cl_mem),		&rand_molec_struc_vec_gpu);
 	SetKernelArg(kernels[0], 4, sizeof(cl_mem),		&best_e_gpu);
-	SetKernelArg(kernels[0], 5, sizeof(size_t),		&quasi_newton_par_max_steps);
-	SetKernelArg(kernels[0], 6, sizeof(unsigned),	&num_steps);
+	SetKernelArg(kernels[0], 5, sizeof(int),		&quasi_newton_par_max_steps);
+	SetKernelArg(kernels[0], 6, sizeof(unsigned int),	&num_steps);
 	SetKernelArg(kernels[0], 7, sizeof(float),		&mutation_amplitude_float);
-	SetKernelArg(kernels[0], 8, sizeof(int),		&rand_maps_gpu); 
+	SetKernelArg(kernels[0], 8, sizeof(cl_mem),		&rand_maps_gpu); 
 	SetKernelArg(kernels[0], 9, sizeof(float),		&epsilon_fl_float);
 	SetKernelArg(kernels[0], 10, sizeof(cl_mem),	&hunt_cap_gpu);
 	SetKernelArg(kernels[0], 11, sizeof(cl_mem),	&authentic_v_gpu);
 	SetKernelArg(kernels[0], 12, sizeof(cl_mem),	&results);
 	SetKernelArg(kernels[0], 13, sizeof(int),		&search_depth);
 	SetKernelArg(kernels[0], 14, sizeof(int),		&thread); 
-	SetKernelArg(kernels[0], 15, sizeof(int),		&total_wi);
+	SetKernelArg(kernels[0], 15, sizeof(int),	&total_wi);
 	/**************************************************************************/
 	/****************************   Start kernel    ***************************/
 	/**************************************************************************/
 	size_t global_size[2] = {512, 32 };
 	size_t local_size[2] = { 16,8 };
-
 	cl_event monte_clarlo_cl;
 	err = clEnqueueNDRangeKernel(queue, kernels[0], 2, 0, global_size, local_size, 0, NULL, &monte_clarlo_cl); checkErr(err);
 
