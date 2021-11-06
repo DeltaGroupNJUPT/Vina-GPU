@@ -91,10 +91,6 @@ std::vector<output_type> monte_carlo::cl_to_vina(output_type_cl result_ptr[], in
 		// Orientation
 		qt q(tmp_cl.orientation[0], tmp_cl.orientation[1], tmp_cl.orientation[2], tmp_cl.orientation[3]);
 		tmp_c.ligands[0].rigid.orientation = q;
-<<<<<<< Updated upstream
-		// ����output_type
-=======
->>>>>>> Stashed changes
 		output_type tmp_vina(tmp_c, tmp_cl.e);
 		// torsion
 		for (int j = 0; j < tmp_cl.lig_torsion_size; j++)tmp_vina.c.ligands[0].torsions.push_back(tmp_cl.lig_torsion[j]);
@@ -137,35 +133,6 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	fl best_e = max_fl;
 	quasi_newton quasi_newton_par; quasi_newton_par.max_steps = ssd_par.evals;
 	output_type origin = tmp;
-<<<<<<< Updated upstream
-#ifdef DATA_DISTRIBUTION_TEST
-	// ���ڴ洢ʵ������
-	std::fstream f1;
-	f1.open("data_distri_exauh8_loop_21945_1.txt", std::ios::app | std::ios::in);
-#endif
-	int num = 100;
-	VINA_U_FOR(step, (int)(num_steps)) {
-		//tmp = origin;
-		//for (int i = 0; i < 1000; i++) {
-			if (increment_me)
-				++(*increment_me);
-			output_type candidate = tmp;
-			mutate_conf(candidate.c, m, mutation_amplitude, generator);
-#ifdef DATA_DISTRIBUTION_TEST
-			// д��ʵ������
-			for (int i = 0; i < 3; i++)f1 << candidate.c.ligands[0].rigid.position[i] << " ";
-			f1 << candidate.c.ligands[0].rigid.orientation.R_component_1() << " ";
-			f1 << candidate.c.ligands[0].rigid.orientation.R_component_2() << " ";
-			f1 << candidate.c.ligands[0].rigid.orientation.R_component_3() << " ";
-			f1 << candidate.c.ligands[0].rigid.orientation.R_component_4() << " ";
-			for (int i = 0; i < candidate.c.ligands[0].torsions.size(); i++)f1 << candidate.c.ligands[0].torsions[i] << " ";
-			f1 << "\n";
-#endif
-			quasi_newton_par(m, p, ig, candidate, g, hunt_cap);
-			if (step == 0 || metropolis_accept(tmp.e, candidate.e, temperature, generator)) {
-				tmp = candidate;
-=======
->>>>>>> Stashed changes
 
 	VINA_U_FOR(step, num_steps) {
 		if (increment_me)
@@ -212,7 +179,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	cl_program program;
 	size_t program_size;
 	//Read kernel source code
-//#ifdef BUILD_KERNEL_FROM_SOURCE
+#ifdef BUILD_KERNEL_FROM_SOURCE
 	const std::string default_work_path = ".";
 	const std::string include_path = default_work_path + "/OpenCL/inc"; //FIX it
 	const std::string addtion = "";
@@ -238,7 +205,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	program_cl = clCreateProgramWithSource(context, 1, (const char**)&final_files_char, &final_size, &err); checkErr(err);
 	SetupBuildProgramWithSource(program_cl, NULL, devices, include_path, addtion);
 	SaveProgramToBinary(program_cl, "Kernel2_Opt.bin");
-//#endif
+#endif
 	program_cl = SetupBuildProgramWithBinary(context, devices, "Kernel2_Opt.bin");
 
 	err = clUnloadPlatformCompiler(platforms[gpu_platform_id]); checkErr(err);
