@@ -6,5 +6,5 @@ center_z = 82.673
 size_x = 24
 size_y = 26.25
 size_z = 22.5
-thread = 1000
-search_depth = 1
+thread = 8000
+search_depth = 10
