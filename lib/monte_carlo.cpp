@@ -191,7 +191,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	cl_device_id* devices;
 	cl_context context;
 	cl_command_queue queue;
-	cl_int gpu_platform_id = 0;
+	cl_int gpu_platform_id;
 	SetupPlatform(&platforms, &gpu_platform_id);
 	SetupDevice(platforms, &devices, gpu_platform_id);
 	SetupContext(platforms, devices, &context, 1, gpu_platform_id);
