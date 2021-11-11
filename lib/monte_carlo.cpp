@@ -91,7 +91,6 @@ std::vector<output_type> monte_carlo::cl_to_vina(output_type_cl result_ptr[], in
 		// Orientation
 		qt q(tmp_cl.orientation[0], tmp_cl.orientation[1], tmp_cl.orientation[2], tmp_cl.orientation[3]);
 		tmp_c.ligands[0].rigid.orientation = q;
-		// ����output_type
 		output_type tmp_vina(tmp_c, tmp_cl.e);
 		// torsion
 		for (int j = 0; j < tmp_cl.lig_torsion_size; j++)tmp_vina.c.ligands[0].torsions.push_back(tmp_cl.lig_torsion[j]);
@@ -134,50 +133,29 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	fl best_e = max_fl;
 	quasi_newton quasi_newton_par; quasi_newton_par.max_steps = ssd_par.evals;
 	output_type origin = tmp;
-#ifdef DATA_DISTRIBUTION_TEST
-	// ���ڴ洢ʵ������
-	std::fstream f1;
-	f1.open("data_distri_exauh8_loop_21945_1.txt", std::ios::app | std::ios::in);
-#endif
-	int num = 100;
-	VINA_U_FOR(step, (int)(num_steps)) {
-		//tmp = origin;
-		//for (int i = 0; i < 1000; i++) {
-			if (increment_me)
-				++(*increment_me);
-			output_type candidate = tmp;
-			mutate_conf(candidate.c, m, mutation_amplitude, generator);
-#ifdef DATA_DISTRIBUTION_TEST
-			// д��ʵ������
-			for (int i = 0; i < 3; i++)f1 << candidate.c.ligands[0].rigid.position[i] << " ";
-			f1 << candidate.c.ligands[0].rigid.orientation.R_component_1() << " ";
-			f1 << candidate.c.ligands[0].rigid.orientation.R_component_2() << " ";
-			f1 << candidate.c.ligands[0].rigid.orientation.R_component_3() << " ";
-			f1 << candidate.c.ligands[0].rigid.orientation.R_component_4() << " ";
-			for (int i = 0; i < candidate.c.ligands[0].torsions.size(); i++)f1 << candidate.c.ligands[0].torsions[i] << " ";
-			f1 << "\n";
-#endif
-			quasi_newton_par(m, p, ig, candidate, g, hunt_cap);
-			if (step == 0 || metropolis_accept(tmp.e, candidate.e, temperature, generator)) {
-				tmp = candidate;
 
+	VINA_U_FOR(step, num_steps) {
+		if (increment_me)
+			++(*increment_me);
+		output_type candidate = tmp;
+		mutate_conf(candidate.c, m, mutation_amplitude, generator);
+		quasi_newton_par(m, p, ig, candidate, g, hunt_cap);
+		if (step == 0 || metropolis_accept(tmp.e, candidate.e, temperature, generator)) {
+			tmp = candidate;
+
+			m.set(tmp.c); // FIXME? useless?
+
+			// FIXME only for very promising ones
+			if (tmp.e < best_e || out.size() < num_saved_mins) {
+				quasi_newton_par(m, p, ig, tmp, g, authentic_v);
 				m.set(tmp.c); // FIXME? useless?
-
-				// FIXME only for very promising ones
-				if (tmp.e < best_e || out.size() < num_saved_mins) {
-					quasi_newton_par(m, p, ig, tmp, g, authentic_v);
-					m.set(tmp.c); // FIXME? useless?
-					tmp.coords = m.get_heavy_atom_movable_coords();
-					add_to_output_container(out, tmp, min_rmsd, num_saved_mins); // 20 - max size
-					if (tmp.e < best_e)
-						best_e = tmp.e;
-				}
-		//	}
+				tmp.coords = m.get_heavy_atom_movable_coords();
+				add_to_output_container(out, tmp, min_rmsd, num_saved_mins); // 20 - max size
+				if (tmp.e < best_e)
+					best_e = tmp.e;
+			}
 		}
 	}
-#ifdef DATA_DISTRIBUTION_TEST
-	f1.close();
-#endif
 	VINA_CHECK(!out.empty());
 	VINA_CHECK(out.front().e <= out.back().e); // make sure the sorting worked in the correct order
 }
@@ -222,7 +200,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 		else final_file = final_file + '\n' + (std::string)program_file_n[i];
 		final_size += program_size_n[i];
 	}
-	const char* final_files_char = final_file.data();
+	const char* final_files_char = final_file.data();	
 
 	program_cl = clCreateProgramWithSource(context, 1, (const char**)&final_files_char, &final_size, &err); checkErr(err);
 	SetupBuildProgramWithSource(program_cl, NULL, devices, include_path, addtion);

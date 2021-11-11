@@ -130,7 +130,7 @@ void SetupDevice(cl_platform_id* platforms, cl_device_id** devices, cl_int gpu_p
     size_t device_name_size;
     cl_ulong mem_size;
     cl_int N = gpu_platform;
-    //Choose the number N platform
+    //Initiate device info on number N platform
     err = clGetDeviceIDs(platforms[N], CL_DEVICE_TYPE_GPU, 0, NULL, &num_device); checkErr(err);
     *devices = (cl_device_id*)malloc(sizeof(cl_device_id) * num_device);
     err = clGetDeviceIDs(platforms[N], CL_DEVICE_TYPE_GPU, num_device, *devices, NULL); checkErr(err);
@@ -212,7 +212,7 @@ void SetupBuildProgramWithSource(cl_program program_cl, cl_program program_head,
         printf("\nError: Failed to build program executable!");
         char* buffer;
         size_t logsize;
-        //Check buiding log
+        //Building log
         err = clGetProgramBuildInfo(program_cl, *devices, CL_PROGRAM_BUILD_LOG, 0, NULL, &logsize); checkErr(err);
         buffer = (char*)malloc(logsize * sizeof(char));
         err = clGetProgramBuildInfo(program_cl, *devices, CL_PROGRAM_BUILD_LOG, logsize, buffer, NULL); checkErr(err);
