@@ -5,14 +5,14 @@ A heterogeneous OpenCL implementation of AutoDock Vina
 ## Compiling and Running
 Notice that at least one GPU card is required and make sure the version of GPU driver is up to date
 ### Windows
-#### run from executable file
+#### Run from executable file
 Direcetly run Vina-GPU from executable file `Vina-GPU.exe`.
 Take an example on PDBid:2bm2 (all example files in the input_file_example directory) :
 1. Create the `2bm2_config.txt` file which includes the receptor and ligand files, center and volume of the search box, the number of threads and search depth
 2. make sure that `Vina-GPU.exe`, `2bm2_config.txt` and `Kernel2_Opt.bin` are in the same directory
 3. Type `Vina-GPU.exe --config 2bm2_config.txt`
 4. Wait untill the docking process finishes and the output file will be `2bm2_out.pdbqt` 
-#### build from source file
+#### Build from source file
 Visual Studio 2019 is recommended for build Vina-GPU from source
 1. install [boost library](https://www.boost.org/) (current version is 1.77.0)
 2. install [CUDA Toolkit](https://developer.nvidia.com/zh-cn/cuda-toolkit) (current version is v11.5) if you are using NVIDIA GPU cards
@@ -45,6 +45,7 @@ note: ensure the line ending are CLRF
 7. after a successful compiling, `Vina-GPU` can be seen in the directory 
 8. type `./Vina-GPU --config ./input_file_example/2bm2_config.txt` to run Vina-GPU
 9. once you successfully ran Vina-GPU, its runtime can be further reduced by typing `make clean` and `make` to build it without compiling kernel files (but make sure `Kernel_Opt.bin` file is **unchanged**)
+
 10. other compile options: 
   
 |Options| Description|
