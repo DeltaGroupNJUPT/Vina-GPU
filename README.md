@@ -1,4 +1,5 @@
 
+
 # Vina-GPU
 A heterogeneous OpenCL implementation of AutoDock Vina
 
@@ -37,9 +38,10 @@ note: ensure the line ending are CLRF
 
 	**note: -DOPENCL_3_0 is highly recommanded in Linux**
 	
-|GPU_PLATFORM| OPENCL_VERSION|
-|--|--|
-| -DNVIDIA_PLATFORM/-DAMD_PLATFORM | -DOPENCL_3_0/-DOPENCL_1_2|
+|Macros|Options|Descriptions|
+|--|--|--|	
+|GPU_PLATFORM|-DNVIDIA_PLATFORM / -DAMD_PLATFORM|NVIDIA / AMD GPU platform
+|  OPENCL_VERSION | -DOPENCL_3_0 / -DOPENCL_1_2|OpenCL version 3.0 / 1.2
 
 6. type `make clean` and `make source` to build Vina-GPU that compile the kernel files on the fly (this could take some time the first time you build Vina-GPU)
 7. after a successful compiling, `Vina-GPU` can be seen in the directory 
