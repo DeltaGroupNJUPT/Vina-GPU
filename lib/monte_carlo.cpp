@@ -217,16 +217,6 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	size_t max_wi_size[3]; // max work item within each dimension(global)
 	err = clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &max_wg_size, NULL); checkErr(err);
 	err = clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_ITEM_SIZES, 3 * sizeof(size_t), &max_wi_size, NULL); checkErr(err);
-	/**************************************************************************/
-	/*********    Generate random seeds (depend on exhaustiveness)    *********/
-	/**************************************************************************/
-
-	std::vector<rng> generator_vec;
-	for (int i = 0; i < thread; i++) {
-		int seed = random_int(0, 1000000, generator);
-		rng generator_tmp(static_cast<rng::result_type>(seed));
-		generator_vec.push_back(generator_tmp);
-	}
 
 	/**************************************************************************/
 	/************************    Original Vina code    ************************/
@@ -375,12 +365,13 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 		}
 	}
 	size_t ig_cl_size = sizeof(*ig_cl_ptr);
-
-	// Generating exhaustiveness random ligand structures
+	
+	// Generating random ligand structures
 	std::vector<output_type_cl*> rand_molec_struc_vec; rand_molec_struc_vec.resize(thread);
 	for (int i = 0; i < thread; i++) {
 		rand_molec_struc_vec[i] = (output_type_cl*)malloc(sizeof(output_type_cl));
 	}
+
 	//std::vector<output_type_cl> rand_molec_struc_vec; 
 	//rand_molec_struc_vec.resize(thread);
 	int lig_torsion_size = tmp.c.ligands[0].torsions.size();
@@ -389,7 +380,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	uniform_data.resize(thread);
 	
 	for (int i = 0; i < thread; i++) {
-		tmp.c.randomize(corner1, corner2, generator_vec[i]); // generate a random structure
+		tmp.c.randomize(corner1, corner2, generator); // generate a random structure
 		//Generate positions with uniform probability
 		//generate_uniform_position(corner1, corner2, uniform_data, exhaustiveness);
 		//for (int j = 0; j < 3; j++) rand_molec_struc_vec[i].position[j] = uniform_data[i].data[j];
@@ -430,11 +421,11 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	// Generate random maps
 	random_maps* rand_maps = (random_maps*)malloc(sizeof(random_maps));
 	for (int i = 0; i < MAX_NUM_OF_RANDOM_MAP; i++) {
-		rand_maps->int_map[i] = random_int(0, int(lig_torsion_size), generator_vec[0]);
-		rand_maps->pi_map[i] = random_fl(-pi, pi, generator_vec[0]);
+		rand_maps->int_map[i] = random_int(0, int(lig_torsion_size), generator);
+		rand_maps->pi_map[i] = random_fl(-pi, pi, generator);
 	}
 	for (int i = 0; i < MAX_NUM_OF_RANDOM_MAP; i++) {
-		vec rand_coords = random_inside_sphere(generator_vec[0]);
+		vec rand_coords = random_inside_sphere(generator);
 		for (int j = 0; j < 3 ; j ++) {
 			rand_maps->sphere_map[i][j] = rand_coords[j];
 		}
@@ -450,6 +441,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	/**************************************************************************/
 	/************************    Allocate GPU memory    ***********************/
 	/**************************************************************************/
+
 	cl_mem rand_molec_struc_vec_gpu;
 	CreateDeviceBuffer(&rand_molec_struc_vec_gpu, CL_MEM_READ_ONLY, thread* SIZE_OF_MOLEC_STRUC, context);
 	for (int i = 0; i < thread; i++) {
@@ -469,7 +461,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 		err = clEnqueueWriteBuffer(queue, rand_molec_struc_vec_gpu, false, i * SIZE_OF_MOLEC_STRUC + (pos.size() + ori.size() + MAX_NUM_OF_LIG_TORSION + MAX_NUM_OF_FLEX_TORSION) * sizeof(float),
 			sizeof(float), &lig_tor_size, 0, NULL, NULL); checkErr(err);
 	}
-	
+
 	cl_mem best_e_gpu;
 	CreateDeviceBuffer(&best_e_gpu, CL_MEM_READ_WRITE, thread * sizeof(float), context);
 	err = clEnqueueFillBuffer(queue, best_e_gpu, &max_fl, sizeof(float), 0, thread * sizeof(float), 0, NULL, NULL); checkErr(err);
@@ -553,7 +545,6 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	VINA_CHECK(!out.empty());
 	VINA_CHECK(out.front().e <= out.back().e);
 
-
 	/**************************************************************************/
 	/*******************************   Finish    ******************************/
 	/**************************************************************************/
@@ -570,6 +561,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	free(ig_cl_ptr);
 	free(rand_maps);
 	for (int i = 0; i < thread; i++)free(rand_molec_struc_vec[i]);
+
 #ifdef DISPLAY_ANALYSIS
 	// Output Analysis
 	cl_ulong time_start, time_end;
@@ -596,5 +588,6 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 
 	printf("\n constant mem used = %0.3f MBytes \n", (double)(	p_cl_size + ig_cl_size + thread * SIZE_OF_MOLEC_STRUC) / (1024 * 1024));
 #endif
+
 }
 #endif // OPENCL_VERSION

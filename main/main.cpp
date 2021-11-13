@@ -305,7 +305,8 @@ void main_procedure(model& m, const boost::optional<model>& ref, // m is non-con
 	parallel_mc par;
 	sz heuristic = m.num_movable_atoms() + 10 * m.get_size().num_degrees_of_freedom();
 	par.mc.num_steps = unsigned(70 * 3 * (50 + heuristic) / 2); // 2 * 70 -> 8 * 20 // FIXME
-	//par.mc.search_depth = search_depth;// 20210811 Glinttsd
+	//par.mc.search_depth = unsigned(70 * 3 * (50 + heuristic) / 2);
+	par.mc.search_depth = search_depth;// 20210811 Glinttsd
 	if (search_depth != 0) {
 		par.mc.search_depth = search_depth;
 		assert(search_depth >= 1);
