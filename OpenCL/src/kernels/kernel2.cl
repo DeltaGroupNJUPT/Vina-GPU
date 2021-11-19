@@ -126,7 +126,7 @@ void kernel2(	__global	m_cl*			m_cl_global,
 			 gll += total_wi
 		)
 	{
-		if (gll % 100 == 0)printf("\nThread %d START", gll);
+		//if (gll % 100 == 0)printf("\nThread %d START", gll);
 
 		m_cl m_cl_gpu;
 		m_cl_init_with_m_cl(m_cl_global, &m_cl_gpu);
@@ -205,6 +205,6 @@ void kernel2(	__global	m_cl*			m_cl_global,
 
 		// write the best conformation back to CPU
 		write_back(&results[gll], &best_out);
-		if (gll % 100 == 0)printf("\nThread %d FINISH", gll);
+		//if (gll % 100 == 0)printf("\nThread %d FINISH", gll);
 	}
 }
