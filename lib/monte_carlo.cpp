@@ -34,7 +34,7 @@
 
 //#define DISPLAY_ANALYSIS
 //#define DATA_DISTRIBUTION_TEST
-#define BUILD_KERNEL_FROM_SOURCE
+//#define BUILD_KERNEL_FROM_SOURCE
 output_type monte_carlo::operator()(model& m, const precalculate& p, const igrid& ig, const precalculate& p_widened, const igrid& ig_widened, const vec& corner1, const vec& corner2, incrementable* increment_me, rng& generator) const {
 	output_container tmp;
 	this->operator()(m, tmp, p, ig, p_widened, ig_widened, corner1, corner2, increment_me, generator); // call the version that produces the whole container
