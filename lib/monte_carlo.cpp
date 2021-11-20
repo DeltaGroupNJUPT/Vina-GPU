@@ -251,7 +251,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 #endif
 
 	
-	//boost::progress_display p_d(10000);
+	//Display the progress
 	printf("\nSearch depth is set to %d",search_depth);
 	std::thread console_thread(print_process);
 	
