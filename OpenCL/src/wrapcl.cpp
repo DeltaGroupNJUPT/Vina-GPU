@@ -102,7 +102,7 @@ void SetupPlatform(cl_platform_id** platforms, cl_int* gpu_platform) {
         std::string tmp = platform_name;
         if (tmp.find(nvidia) != std::string::npos || tmp.find(amd) != std::string::npos) {
             *gpu_platform = i;
-            printf("\nPlatform: %s", platform_name);fflush(stdout);
+            printf("\nOpenCL Platform: %s", platform_name);fflush(stdout);
         }
     }
     if(*gpu_platform==-1){

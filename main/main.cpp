@@ -215,10 +215,10 @@ void do_search(model& m, const boost::optional<model>& ref, const scoring_functi
 		log << "Using random seed: " << seed;
 		log.endl();
 		output_container out_cont;
-		doing(verbosity, "Performing search", log);
+		//doing(verbosity, "Performing search", log);
 		par(m, out_cont, prec, ig, prec_widened, ig_widened, corner1, corner2, generator);
-		std::cout << std::endl;
-		done(verbosity, log);
+		//std::cout << std::endl;
+		//done(verbosity, log);
 
 		doing(verbosity, "Refining results", log);
 		VINA_FOR_IN(i, out_cont)
@@ -315,7 +315,7 @@ void main_procedure(model& m, const boost::optional<model>& ref, // m is non-con
 		par.mc.search_depth = (int) (0.24 * m.num_movable_atoms() + 0.29 * m.get_size().num_degrees_of_freedom() - 5.74);
 		if (par.mc.search_depth < 1) par.mc.search_depth = 1;
 	}
-	std::cout << "Search depth is set to " << par.mc.search_depth << std::endl;
+	//std::cout << "Search depth is set to " << par.mc.search_depth << std::endl;
 	par.mc.thread = thread;// 20210811 Glinttsd
 
 	par.mc.ssd_par.evals = unsigned((25 + m.num_movable_atoms()) / 3);

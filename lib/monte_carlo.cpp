@@ -31,6 +31,13 @@
 #include <iostream>
 
 #include <fstream>
+#include <boost/progress.hpp>
+#include <thread>
+#ifdef _WINDOWS
+	#include<windows.h>
+#elif _LINUX
+	#include<unistd.h>
+#endif
 
 //#define DISPLAY_ANALYSIS
 //#define DATA_DISTRIBUTION_TEST
@@ -160,10 +167,42 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	VINA_CHECK(out.front().e <= out.back().e); // make sure the sorting worked in the correct order
 }
 #else
+
+volatile bool finished = false; //20211119 Glinttsd
+void print_process() {
+	int count = 0;
+	printf("\n");
+	do
+	{
+#ifdef _WINDOWS
+		Sleep(100);
+#elif _LINUX
+		sleep(0.1);
+#endif
+		printf("\rPerform docking|");
+		for (int i = 0; i < count; i++)printf(" ");
+		printf("=======");
+		for (int i = 0; i < 30 - count; i++)printf(" ");
+		printf("|");
+
+		count++;
+		count %= 30;
+	} while (finished != true);
+	printf("\rPerform docking|");
+	for (int i = 0; i < 16; i++)printf("=");
+	printf("done");
+	for (int i = 0; i < 17; i++)printf("=");
+	printf("|\n");
+}
+
+
+
 void monte_carlo::operator()(model& m, output_container& out, const precalculate& p, const igrid& ig, const precalculate& p_widened, const igrid& ig_widened, const vec& corner1, const vec& corner2, incrementable* increment_me, rng& generator) const {
 	/**************************************************************************/
 	/***************************    OpenCL Init    ****************************/
 	/**************************************************************************/
+
+
 	cl_int err;
 	cl_platform_id* platforms;
 	cl_device_id* devices;
@@ -178,8 +217,12 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	cl_program program_cl;
 	cl_program program;
 	size_t program_size;
+
+
+	
 	//Read kernel source code
 #ifdef BUILD_KERNEL_FROM_SOURCE
+	printf("\nBuild kernels from source"); fflush(stdout);
 	const std::string default_work_path = ".";
 	const std::string include_path = default_work_path + "/OpenCL/inc"; //FIX it
 	const std::string addtion = "";
@@ -206,6 +249,13 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	SetupBuildProgramWithSource(program_cl, NULL, devices, include_path, addtion);
 	SaveProgramToBinary(program_cl, "Kernel2_Opt.bin");
 #endif
+
+	
+	//boost::progress_display p_d(10000);
+	printf("\nSearch depth is set to %d",search_depth);
+	std::thread console_thread(print_process);
+	
+
 	program_cl = SetupBuildProgramWithBinary(context, devices, "Kernel2_Opt.bin");
 
 	err = clUnloadPlatformCompiler(platforms[gpu_platform_id]); checkErr(err);
@@ -528,6 +578,8 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 
 	clWaitForEvents(1, &monte_clarlo_cl);
 
+
+
 	// Maping result data
  	output_type_cl* result_ptr = (output_type_cl*)clEnqueueMapBuffer(queue, results, CL_TRUE, CL_MAP_READ, 
 																	0, thread * sizeof(output_type_cl),
@@ -562,20 +614,23 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	free(rand_maps);
 	for (int i = 0; i < thread; i++)free(rand_molec_struc_vec[i]);
 
-	// Output Analysis
-	cl_ulong time_start, time_end;
-	double total_time;
-	err = clGetEventProfilingInfo(monte_clarlo_cl, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL); checkErr(err);
-	err = clGetEventProfilingInfo(monte_clarlo_cl, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL); checkErr(err);
-	total_time = time_end - time_start;
-	printf("\n GPU monte carlo runtime = %0.16f s\n", (total_time / 1000000000.0));
+	finished = true;
+	console_thread.join(); // wait the thread finish
 
-	std::ofstream file("gpu_runtime.txt");
-	if (file.is_open())
-	{
-		file << "GPU monte carlo runtime = " << (double)(total_time / 1000000000.0) << " s" << std::endl;
-		file.close();
-	}
+	// Output Analysis
+	//cl_ulong time_start, time_end;
+	//double total_time;
+	//err = clGetEventProfilingInfo(monte_clarlo_cl, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL); checkErr(err);
+	//err = clGetEventProfilingInfo(monte_clarlo_cl, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL); checkErr(err);
+	//total_time = time_end - time_start;
+	//printf("\nGPU monte carlo runtime = %0.1f s\n", (total_time / 1000000000.0));
+
+	//std::ofstream file("gpu_runtime.txt");
+	//if (file.is_open())
+	//{
+	//	file << "GPU monte carlo runtime = " << (double)(total_time / 1000000000.0) << " s" << std::endl;
+	//	file.close();
+	//}
 
 #ifdef DISPLAY_ANALYSIS
 	// Output Analysis
