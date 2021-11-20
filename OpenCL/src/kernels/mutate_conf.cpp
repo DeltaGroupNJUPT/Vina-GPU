@@ -102,14 +102,14 @@ inline void quaternion_normalize_approx(float* q, float epsilon_fl) {
 		;
 	else {
 		const float a = sqrt(s);
-		if (a <= epsilon_fl) printf("\nmutate: quaternion_normalize_approx ERROR!"); // Replace assert(a > epsilon_fl);
+		//if (a <= epsilon_fl) printf("\nmutate: quaternion_normalize_approx ERROR!"); // Replace assert(a > epsilon_fl);
 		for (int i = 0; i < 4; i++)q[i] *= (1 / a);
-		if (quaternion_is_normalized(q) != true)printf("\nmutate: quaternion_normalize_approx() ERROR!");// Replace assert(quaternion_is_normalized(q));
+		//if (quaternion_is_normalized(q) != true)printf("\nmutate: quaternion_normalize_approx() ERROR!");// Replace assert(quaternion_is_normalized(q));
 	}
 }
 
 void quaternion_increment(float* q, const float* rotation, float epsilon_fl) {
-	if (quaternion_is_normalized(q) != true)printf("\nmutate: quaternion_increment() ERROR!"); // Replace assert(quaternion_is_normalized(q))
+	//if (quaternion_is_normalized(q) != true)printf("\nmutate: quaternion_increment() ERROR!"); // Replace assert(quaternion_is_normalized(q))
 	float q_old[4] = { q[0],q[1],q[2],q[3] };
 	angle_to_quaternion(q, rotation, epsilon_fl);
 	angle_to_quaternion_multi(q, q_old);
