@@ -14,7 +14,7 @@ Take an example on PDBid:2bm2 (all example files in the input_file_example direc
 3. Type `Vina-GPU.exe --config 2bm2_config.txt`
 4. Wait untill the docking process finishes and the output file will be `2bm2_out.pdbqt` 
 #### Build from source file
-Visual Studio 2019 is recommended for build Vina-GPU from source
+>Visual Studio 2019 is recommended for build Vina-GPU from source
 1. install [boost library](https://www.boost.org/) (current version is 1.77.0)
 2. install [CUDA Toolkit](https://developer.nvidia.com/zh-cn/cuda-toolkit) (current version is v11.5) if you are using NVIDIA GPU cards
 
@@ -46,7 +46,7 @@ note: ensure the line ending are CLRF
 6. type `make clean` and `make source` to build Vina-GPU that compile the kernel files on the fly (this could take some time the first time you build Vina-GPU)
 7. after a successful compiling, `Vina-GPU` can be seen in the directory 
 8. type `./Vina-GPU --config ./input_file_example/2bm2_config.txt` to run Vina-GPU
-9. once you successfully ran Vina-GPU, its runtime can be further reduced by typing `make clean` and `make` to build it without compiling kernel files (but make sure `Kernel_Opt.bin` file is **unchanged**)
+9. once you successfully ran Vina-GPU, its runtime can be further reduced by typing `make clean` and `make` to build it without compiling kernel files (but make sure `Kernel2_Opt.bin` file is **unchanged**)
 
 10. other compile options: 
   
@@ -54,6 +54,13 @@ note: ensure the line ending are CLRF
 |--|--|
 | -g | debug|
 |-DDISPLAY_ADDITION_INFO|print addition information
+### macOS
+>note: Running Vina-GPU on macOS is not recommanded and not fully tested yet
+1. install [boost library](https://www.boost.org/) (current version is 1.77.0)
+>modify `Makefile` as follows: 
+2. annotate `OPENCL_LIB_PATH`, `OPENCL_INC_PATH` and `-L$(OPENCL_LIB_PATH)/lib64` 
+3. add `-framework OpenCL` in `LIB3`
+4. type `make` and run
 
 ## Usage
 |Arguments| Description|Default value
@@ -64,6 +71,14 @@ note: ensure the line ending are CLRF
 |--search_depth| the number of searching iterations in each docking lane| heuristically determined (please check our paper)
 |--center_x/y/z|the center of the searching box in the receptor|no default
 |--size_x/y/z|the volumn of the searching box (cannot be too large)|no default 
+
+## Graphic User Interface (GUI)
+A graphic user interface (GUI) is provided for users on **Windows** OS
+1. first make sure that  `Vina-GPU.exe` works perfectly within a terminal
+2. put the `Vina-GPU.exe` and `Kernel2_Opt.bin` files in `./Vina-GPU/GUI/exec` and overwrite the original files
+3. run the `Vina-GPU-GUI.exe`file within  `./Vina-GPU/GUI` to open up the Vina-GPU GUI
+4. set the paths and arguments accordingly
+5. click the `start` button to run the Vina-GPU docking
 ## Citation
 * Shidi, Tang, Chen Ruiqi, Lin Mengru, Lin Qingde, Zhu Yanxiang, Wu Jiansheng, Hu Haifeng, and Ling Ming. "Accelerating AutoDock VINA with GPUs." ChemRxiv (2021). Print.  
 
