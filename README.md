@@ -4,7 +4,7 @@
 A heterogeneous OpenCL implementation of AutoDock Vina
 
 ## Compiling and Running
-Notice that at least one GPU card is required and make sure the version of GPU driver is up to date
+Notice that at least one GPU card is required and **make sure** the version of GPU driver is up to date
 ### Windows
 #### Run from executable file
 Direcetly run Vina-GPU from executable file `Vina-GPU.exe`.
