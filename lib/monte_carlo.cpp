@@ -183,7 +183,7 @@ void print_process() {
 		for (int i = 0; i < count; i++)printf(" ");
 		printf("=======");
 		for (int i = 0; i < 30 - count; i++)printf(" ");
-		printf("|");
+		printf("|"); fflush(stdout);
 
 		count++;
 		count %= 30;
@@ -192,7 +192,7 @@ void print_process() {
 	for (int i = 0; i < 16; i++)printf("=");
 	printf("done");
 	for (int i = 0; i < 17; i++)printf("=");
-	printf("|\n");
+	printf("|\n"); fflush(stdout);
 }
 
 

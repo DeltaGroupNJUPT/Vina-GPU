@@ -217,9 +217,9 @@ void do_search(model& m, const boost::optional<model>& ref, const scoring_functi
 		output_container out_cont;
 		//doing(verbosity, "Performing search", log);
 		par(m, out_cont, prec, ig, prec_widened, ig_widened, corner1, corner2, generator);
-		//std::cout << std::endl;
 		//done(verbosity, log);
-
+		
+		std::cout << std::endl;
 		doing(verbosity, "Refining results", log);
 		VINA_FOR_IN(i, out_cont)
 			refine_structure(m, prec, nc, out_cont[i], authentic_v, par.mc.ssd_par.evals);
@@ -733,12 +733,12 @@ Thank you!\n";
 	}
 
 	clock_t end = clock();
-	std::ofstream file("gpu_runtime.txt", std::ios::app);
-	if (file.is_open())
-	{
-		file << "GPU total runtime = " << (double)(end - start) / CLOCKS_PER_SEC << " s" << std::endl;
-		file.close();
-	}
+	//std::ofstream file("gpu_runtime.txt", std::ios::app);
+	//if (file.is_open())
+	//{
+	//	file << "GPU total runtime = " << (double)(end - start) / CLOCKS_PER_SEC << " s" << std::endl;
+	//	file.close();
+	//}
 
 	std::cout << "Vina-GPU total runtime = " << (double)(end - start) / CLOCKS_PER_SEC << " s" << std::endl;
 	//getchar();

@@ -1,0 +1,11 @@
+receptor = C:/Users/student/Desktop/Vina-GPU_paper/GUI/pdbqt/2bm2_protein.pdbqt
+ligand = C:/Users/student/Desktop/Vina-GPU_paper/GUI/pdbqt/2bm2_ligand.pdbqt
+out = C:/Users/student/Desktop
+center_x = 40.415
+center_y = 110.986
+center_z = 82.673
+size_x = 24
+size_y = 26.25
+size_z = 22.5
+thread = 8000
+search_depth = 100
