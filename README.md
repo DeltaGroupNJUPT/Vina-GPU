@@ -1,5 +1,6 @@
 
 
+
 # Vina-GPU
 A heterogeneous OpenCL implementation of AutoDock Vina
 
@@ -25,8 +26,9 @@ A graphic user interface (GUI) is also provided for Windows users, please check 
 4. add `$(YOUR_BOOST_LIBRARY_PATH)/stage/lib` `$(YOUR_CUDA_TOOLKIT_PATH)/CUDA/lib/Win32`in the addtional library 
 5. add `OpenCL.lib` in the additional dependencies 
 6. add `--config=./input_file_example/2bm2_config.txt` in the command arguments
-7. if you want to compile the binary kernel file on the fly, add `BUILD_KERNEL_FROM_SOURCE` in the preprocessor definitions
-8. build & run
+7.  add `WIN32` in the preprocessor definitions if necessary
+8. if you want to compile the binary kernel file on the fly, add `BUILD_KERNEL_FROM_SOURCE` in the preprocessor definitions
+9. build & run
 
 note: ensure the line ending are CLRF
 ### Linux
