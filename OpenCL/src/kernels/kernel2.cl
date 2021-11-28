@@ -119,6 +119,7 @@ void kernel2(	__global	m_cl*			m_cl_global,
 	int gs = get_global_size(0);
 	int gl = get_global_linear_id();
 
+
 	float best_e = INFINITY;
 
 	for (int gll = gl;

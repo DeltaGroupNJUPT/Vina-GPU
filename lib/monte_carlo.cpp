@@ -33,11 +33,6 @@
 #include <fstream>
 #include <boost/progress.hpp>
 #include <thread>
-#ifdef _WINDOWS
-	#include<windows.h>
-#elif _LINUX
-	#include<unistd.h>
-#endif
 
 //#define DISPLAY_ANALYSIS
 //#define DATA_DISTRIBUTION_TEST
@@ -174,9 +169,9 @@ void print_process() {
 	printf("\n");
 	do
 	{
-#ifdef _WINDOWS
+#ifdef WIN32
 		Sleep(100);
-#elif _LINUX
+#else
 		sleep(0.1);
 #endif
 		printf("\rPerform docking|");
