@@ -66,6 +66,8 @@ struct monte_carlo {
 	int thread; //parallelism 20210917 Glinttsd
 	int search_depth; // 20210813 Glinttsd
 
+
+
 	monte_carlo() : num_steps(2500), temperature(1.2), hunt_cap(10, 1.5, 10), min_rmsd(0.5), num_saved_mins(50), mutation_amplitude(2) {} // T = 600K, R = 2cal/(K*mol) -> temperature = RT = 1.2;  num_steps = 50*lig_atoms = 2500
 
 	output_type operator()(model& m, const precalculate& p, const igrid& ig, const precalculate& p_widened, const igrid& ig_widened, const vec& corner1, const vec& corner2, incrementable* increment_me, rng& generator) const;
@@ -77,40 +79,8 @@ struct monte_carlo {
 	void many_runs(model& m, output_container& out, const precalculate& p, const igrid& ig, const vec& corner1, const vec& corner2, sz num_runs, rng& generator) const;
 	std::vector<output_type> cl_to_vina(output_type_cl result_ptr[], int exhaus) const;
 	void generate_uniform_position(const vec corner1, const vec corner2, std::vector<vec>& uniform_data, int exhaustiveness) const;
-
+	//void print_process(boost::progress_display* p_d);
 };
 
-//struct molec_struc {
-//	molec_struc() {
-//		position.resize(3);
-//		orientation.resize(4);
-//		lig_torsion.resize(MAX_NUM_OF_LIG_TORSION);
-//		flex_torsion.resize(MAX_NUM_OF_FLEX_TORSION);
-//	}
-//public:
-//	std::vector<double> position;
-//	std::vector<double> orientation;
-//	std::vector<double> lig_torsion;
-//	std::vector<double> flex_torsion;
-//};
-//
-//struct change_struc {
-//	change_struc() {
-//		position.resize(3);
-//		orientation.resize(3);
-//		lig_torsion.resize(MAX_NUM_OF_LIG_TORSION);
-//		flex_torsion.resize(MAX_NUM_OF_FLEX_TORSION);
-//	}
-//public:
-//	std::vector<double> position;
-//	std::vector<double> orientation;
-//	std::vector<double> lig_torsion;
-//	std::vector<double> flex_torsion;
-//};
-//
-//struct m_atoms {
-//public:
-//	std::vector<int> atoms_types;
-//};
 #endif
 

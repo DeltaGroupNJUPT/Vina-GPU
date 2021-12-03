@@ -1,10 +1,12 @@
 receptor = ./input_file_example/2bm2_protein.pdbqt
 ligand =  ./input_file_example/2bm2_ligand.pdbqt
+out = ./2bm2_out.pdbqt
 center_x = 40.415
 center_y = 110.986
 center_z = 82.673
-size_x = 24
-size_y = 26.25
-size_z = 22.5
-thread = 8000
-search_depth = 10
+size_x = 30
+size_y = 30
+size_z = 30
+thread = 1000
+
+	
