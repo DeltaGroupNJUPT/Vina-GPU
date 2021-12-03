@@ -172,7 +172,7 @@ void print_process() {
 #ifdef WIN32
 		Sleep(100);
 #else
-		sleep(0.1);
+		sleep(1);
 #endif
 		printf("\rPerform docking|");
 		for (int i = 0; i < count; i++)printf(" ");
