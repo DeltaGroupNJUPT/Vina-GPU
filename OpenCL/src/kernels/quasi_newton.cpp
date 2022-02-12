@@ -141,15 +141,26 @@ float g_evaluate(			__constant	grid_cl*	g,
 	const int y1 = y0 + 1;
 	const int z1 = z0 + 1;
 
-	const float f000 = access_m_data(g->m_data, m_i, m_j, x0, y0, z0);
-	const float f100 = access_m_data(g->m_data, m_i, m_j, x1, y0, z0);
-	const float f010 = access_m_data(g->m_data, m_i, m_j, x0, y1, z0);
-	const float f110 = access_m_data(g->m_data, m_i, m_j, x1, y1, z0);
-	const float f001 = access_m_data(g->m_data, m_i, m_j, x0, y0, z1);
-	const float f101 = access_m_data(g->m_data, m_i, m_j, x1, y0, z1);
-	const float f011 = access_m_data(g->m_data, m_i, m_j, x0, y1, z1);
-	const float f111 = access_m_data(g->m_data, m_i, m_j, x1, y1, z1);
+	//const float f000 = access_m_data(g->m_data, m_i, m_j, x0, y0, z0);
+	//const float f100 = access_m_data(g->m_data, m_i, m_j, x1, y0, z0);
+	//const float f010 = access_m_data(g->m_data, m_i, m_j, x0, y1, z0);
+	//const float f110 = access_m_data(g->m_data, m_i, m_j, x1, y1, z0);
+	//const float f001 = access_m_data(g->m_data, m_i, m_j, x0, y0, z1);
+	//const float f101 = access_m_data(g->m_data, m_i, m_j, x1, y0, z1);
+	//const float f011 = access_m_data(g->m_data, m_i, m_j, x0, y1, z1);
+	//const float f111 = access_m_data(g->m_data, m_i, m_j, x1, y1, z1);
 
+	int base = (x0 + m_i * (y0 + m_j * z0)) * 8;
+	__constant float* base_ptr = &g->m_data[base];
+
+	const float f000 = *base_ptr;
+	const float f100 = *(base_ptr + 1);
+	const float f010 = *(base_ptr + 2);
+	const float f110 = *(base_ptr + 3);
+	const float f001 = *(base_ptr + 4);
+	const float f101 = *(base_ptr + 5);
+	const float f011 = *(base_ptr + 6);
+	const float f111 = *(base_ptr + 7);
 
 	const float x = s[0];
 	const float y = s[1];
@@ -333,7 +344,7 @@ inline void angle_to_quaternion2(				float*		out,
 
 void set(	const				output_type_cl* x,
 								rigid_cl*		lig_rigid_gpu,
-								m_coords_cl*		m_coords_gpu,	
+								m_coords_cl*	m_coords_gpu,	
 			const				atom_cl*		atoms,				
 			const				int				m_num_movable_atoms,
 			const				float			epsilon_fl
@@ -346,7 +357,7 @@ void set(	const				output_type_cl* x,
 	int begin = lig_rigid_gpu->atom_range[0][0];
 	int end =	lig_rigid_gpu->atom_range[0][1];
 	for (int i = begin; i < end; i++) {
-		local_to_lab(m_coords_gpu->coords[i], lig_rigid_gpu->origin[0], &atoms[i].coords, lig_rigid_gpu->orientation_m[0]);
+		local_to_lab(m_coords_gpu->coords[i], lig_rigid_gpu->origin[0], &atoms[i].coords[0], lig_rigid_gpu->orientation_m[0]);
 	}
 	//************** end node.set_conf **************//
 
@@ -384,7 +395,7 @@ void set(	const				output_type_cl* x,
 		begin = lig_rigid_gpu->atom_range[current][0];
 		end =	lig_rigid_gpu->atom_range[current][1];
 		for (int i = begin; i < end; i++) {
-			local_to_lab(m_coords_gpu->coords[i], lig_rigid_gpu->origin[current], &atoms[i].coords, lig_rigid_gpu->orientation_m[current]);
+			local_to_lab(m_coords_gpu->coords[i], lig_rigid_gpu->origin[current], &atoms[i].coords[0], lig_rigid_gpu->orientation_m[current]);
 		}
 	}
 	//************** end branches_set_conf **************//
@@ -543,7 +554,7 @@ float m_eval_deriv(					output_type_cl*		c,
 					const	__global	float*				v,
 					const				float				epsilon_fl
 ) {
-	set(c, &m_cl_gpu->ligand.rigid, m_cl_gpu->m_coords.coords, m_cl_gpu->atoms, m_cl_gpu->m_num_movable_atoms, epsilon_fl);
+	set(c, &m_cl_gpu->ligand.rigid, &m_cl_gpu->m_coords, m_cl_gpu->atoms, m_cl_gpu->m_num_movable_atoms, epsilon_fl);
 
 	float e = ig_eval_deriv(	c,
 								g, 
@@ -575,6 +586,7 @@ inline float find_change_index_read(const change_cl* g, int index) {
 	index -= 3;
 	if (index < g->lig_torsion_size)return g->lig_torsion[index]; //
 	printf("\nKernel2:find_change_index_read() ERROR!"); // Shouldn't be here
+	return -1;
 }
 
 inline void find_change_index_write(change_cl* g, int index, float data) {

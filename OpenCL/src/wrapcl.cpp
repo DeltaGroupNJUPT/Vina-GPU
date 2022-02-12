@@ -61,6 +61,8 @@ void SetupPlatform(cl_platform_id** platforms, cl_int* gpu_platform) {
     size_t size;
     std::string nvidia = "NVIDIA";
     std::string amd = "AMD";
+    std::string intel_cpu = "Intel(R) OpenCL";
+    std::string intel_graphic_gpu = "Intel(R) OpenCL HD Graphics";
     err = clGetPlatformIDs(0, NULL, &num_platform); checkErr(err);
     *platforms = (cl_platform_id*)malloc(sizeof(cl_platform_id) * (num_platform));
     err = clGetPlatformIDs(num_platform, *platforms, NULL); checkErr(err);
@@ -73,11 +75,19 @@ void SetupPlatform(cl_platform_id** platforms, cl_int* gpu_platform) {
             if (tmp.find(nvidia) != std::string::npos) {
                 *gpu_platform = i;
                 printf("\nPlatform: %s", platform_name);fflush(stdout);
+#ifdef DISPLAY_ADDITION_INFO
+                err = clGetPlatformInfo((*platforms)[i], CL_PLATFORM_VERSION, 0, NULL, &size); checkErr(err);
+                char* platform_version = (char*)malloc(sizeof(char) * size);
+                err = clGetPlatformInfo((*platforms)[i], CL_PLATFORM_VERSION, size, platform_version, NULL); checkErr(err);
+                printf("\nPlatform %d version: %s\n", i, platform_version);
+                free(platform_version);
+#endif
+                break;
             }
         }
         if(*gpu_platform==-1){
             printf("\nCannot find any NVIDIA platform\n");fflush(stdout);
-            exit;
+            exit(-1);
         }
 #elif AMD_PLATFORM
         for (int i = 0; i < num_platform; i++) {
@@ -88,37 +98,101 @@ void SetupPlatform(cl_platform_id** platforms, cl_int* gpu_platform) {
             if (tmp.find(amd) != std::string::npos) {
                 *gpu_platform = i;
                 printf("\nPlatform: %s", platform_name);fflush(stdout);
+#ifdef DISPLAY_ADDITION_INFO
+                err = clGetPlatformInfo((*platforms)[i], CL_PLATFORM_VERSION, 0, NULL, &size); checkErr(err);
+                char* platform_version = (char*)malloc(sizeof(char) * size);
+                err = clGetPlatformInfo((*platforms)[i], CL_PLATFORM_VERSION, size, platform_version, NULL); checkErr(err);
+                printf("\nPlatform %d version: %s\n", i, platform_version);
+                free(platform_version);
+#endif
+                break;
             }
         }
         if(*gpu_platform==-1){
             printf("\nCannot find any AMD platform\n");fflush(stdout);
-            exit;
+            exit(-1);
         }
+#elif INTEL_CPU_PLATFORM
+    for (int i = 0; i < num_platform; i++) {
+        err = clGetPlatformInfo((*platforms)[i], CL_PLATFORM_NAME, 0, NULL, &size); checkErr(err);
+        char* platform_name = (char*)malloc(sizeof(char) * size);
+        err = clGetPlatformInfo((*platforms)[i], CL_PLATFORM_NAME, size, platform_name, NULL); checkErr(err);
+        std::string tmp = platform_name;
+        
+        if (tmp.find(intel_cpu) != std::string::npos && tmp.find(intel_graphic_gpu) == std::string::npos) {
+            *gpu_platform = i;
+            printf("\nPlatform: %s", platform_name); fflush(stdout);
+#ifdef DISPLAY_ADDITION_INFO
+            err = clGetPlatformInfo((*platforms)[i], CL_PLATFORM_VERSION, 0, NULL, &size); checkErr(err);
+            char* platform_version = (char*)malloc(sizeof(char) * size);
+            err = clGetPlatformInfo((*platforms)[i], CL_PLATFORM_VERSION, size, platform_version, NULL); checkErr(err);
+            printf("\nPlatform %d version: %s\n", i, platform_version);
+            free(platform_version);
+#endif
+            break;
+        }
+}
+    if (*gpu_platform == -1) {
+        printf("\nCannot find any Intel(R) CPU platform\n"); fflush(stdout);
+        exit(-1);
+    }
+#elif INTEL_GPU_PLATFORM
+    for (int i = 0; i < num_platform; i++) {
+        err = clGetPlatformInfo((*platforms)[i], CL_PLATFORM_NAME, 0, NULL, &size); checkErr(err);
+        char* platform_name = (char*)malloc(sizeof(char) * size);
+        err = clGetPlatformInfo((*platforms)[i], CL_PLATFORM_NAME, size, platform_name, NULL); checkErr(err);
+        std::string tmp = platform_name;
+        if (tmp.find(intel_graphic_gpu) != std::string::npos) {
+            *gpu_platform = i;
+            printf("\nPlatform: %s", platform_name); fflush(stdout);
+#ifdef DISPLAY_ADDITION_INFO
+            err = clGetPlatformInfo((*platforms)[i], CL_PLATFORM_VERSION, 0, NULL, &size); checkErr(err);
+            char* platform_version = (char*)malloc(sizeof(char) * size);
+            err = clGetPlatformInfo((*platforms)[i], CL_PLATFORM_VERSION, size, platform_version, NULL); checkErr(err);
+            printf("\nPlatform %d version: %s\n", i, platform_version);
+            free(platform_version);
+#endif
+            break;
+        }
+    }
+    if (*gpu_platform == -1) {
+        printf("\nCannot find any Intel(R) GPU platform\n"); fflush(stdout);
+        exit(-1);
+    }
 #else
     for (int i = 0; i < num_platform; i++) {
         err = clGetPlatformInfo((*platforms)[i], CL_PLATFORM_NAME, 0, NULL, &size); checkErr(err);
         char* platform_name = (char*)malloc(sizeof(char) * size);
         err = clGetPlatformInfo((*platforms)[i], CL_PLATFORM_NAME, size, platform_name, NULL); checkErr(err);
         std::string tmp = platform_name;
-        if (tmp.find(nvidia) != std::string::npos || tmp.find(amd) != std::string::npos) {
+        if (tmp.find(nvidia) != std::string::npos            || tmp.find(amd) != std::string::npos ||
+            tmp.find(intel_graphic_gpu) != std::string::npos || tmp.find(intel_cpu) != std::string::npos) {
             *gpu_platform = i;
             printf("\nOpenCL Platform: %s", platform_name);fflush(stdout);
+#ifdef DISPLAY_ADDITION_INFO
+            err = clGetPlatformInfo((*platforms)[i], CL_PLATFORM_VERSION, 0, NULL, &size); checkErr(err);
+            char* platform_version = (char*)malloc(sizeof(char) * size);
+            err = clGetPlatformInfo((*platforms)[i], CL_PLATFORM_VERSION, size, platform_version, NULL); checkErr(err);
+            printf("\nPlatform %d version: %s\n", i, platform_version);
+            free(platform_version);
+#endif
+            break;
         }
     }
     if(*gpu_platform==-1){
             printf("\nCannot find any platform\n");fflush(stdout);
-            exit;
+            exit(-1);
     }
 #endif
-// #ifdef DISPLAY_ADDITION_INFO
-//         printf("\nPlatform %d : %s\n", i, platform_name);
-//         free(platform_name);
-//         err = clGetPlatformInfo((*platforms)[i], CL_PLATFORM_VERSION, 0, NULL, &size); checkErr(err);
-//         char* platform_version = (char*)malloc(sizeof(char) * size);
-//         err = clGetPlatformInfo((*platforms)[i], CL_PLATFORM_VERSION, size, platform_version, NULL); checkErr(err);
-//         printf("\nPlatform %d version: %s\n", i, platform_version);
-//         free(platform_version);
-// #endif
+ ////#ifdef DISPLAY_ADDITION_INFO
+ //        printf("\nPlatform %d : %s\n", i, platform_name);
+ //        free(platform_name);
+ //        err = clGetPlatformInfo((*platforms)[i], CL_PLATFORM_VERSION, 0, NULL, &size); checkErr(err);
+ //        char* platform_version = (char*)malloc(sizeof(char) * size);
+ //        err = clGetPlatformInfo((*platforms)[i], CL_PLATFORM_VERSION, size, platform_version, NULL); checkErr(err);
+ //        printf("\nPlatform %d version: %s\n", i, platform_version);
+ //        free(platform_version);
+ ////#endif
     
 
 }
@@ -131,23 +205,29 @@ void SetupDevice(cl_platform_id* platforms, cl_device_id** devices, cl_int gpu_p
     cl_ulong mem_size;
     cl_int N = gpu_platform;
     //Initiate device info on number N platform
+#ifdef INTEL_CPU_PLATFORM
+    err = clGetDeviceIDs(platforms[N], CL_DEVICE_TYPE_CPU, 0, NULL, &num_device); checkErr(err);
+    *devices = (cl_device_id*)malloc(sizeof(cl_device_id) * num_device);
+    err = clGetDeviceIDs(platforms[N], CL_DEVICE_TYPE_CPU, num_device, *devices, NULL); checkErr(err);
+#else
     err = clGetDeviceIDs(platforms[N], CL_DEVICE_TYPE_GPU, 0, NULL, &num_device); checkErr(err);
     *devices = (cl_device_id*)malloc(sizeof(cl_device_id) * num_device);
     err = clGetDeviceIDs(platforms[N], CL_DEVICE_TYPE_GPU, num_device, *devices, NULL); checkErr(err);
-#ifdef DISPLAY_ADDITION_INFO
+#endif
     //Display devices info
     for (int i = 0; i < num_device; i++) {
         err = clGetDeviceInfo((*devices)[i], CL_DEVICE_NAME, 0, NULL, &device_name_size); checkErr(err);
         char* device_name = (char*)malloc(sizeof(char) * device_name_size);
         err = clGetDeviceInfo((*devices)[i], CL_DEVICE_NAME, device_name_size, device_name, NULL);
-        printf("\nPlatform %d device name:%s\n", N, device_name);
+        printf("\nDevice: %s\n", device_name);
 
+#ifdef DISPLAY_ADDITION_INFO
         err = clGetDeviceInfo((*devices)[i], CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(cl_ulong), &mem_size, NULL);
         printf("\nPlatform %d global memory size:%f GB\n", N, (double)mem_size/1000000000);
         err = clGetDeviceInfo((*devices)[i], CL_DEVICE_LOCAL_MEM_SIZE, sizeof(cl_ulong), &mem_size, NULL);
         printf("\nPlatform %d local memory size:%f KB\n", N, (double)mem_size / 1000);
-    }
 #endif
+    }
 }
 
 
@@ -197,6 +277,9 @@ void SetupBuildProgramWithSource(cl_program program_cl, cl_program program_head,
 #ifdef OPENCL_1_2
     option += std::string("CL1.2");
     printf("\nOpenCL version: 1.2");fflush(stdout);
+#elif OPENCL_2_0
+    option += std::string("CL2.0");
+    printf("\nOpenCL version: 2.0"); fflush(stdout);
 #elif OPENCL_3_0
     option += std::string("CL3.0");
     printf("\nOpenCL version: 3.0");fflush(stdout);

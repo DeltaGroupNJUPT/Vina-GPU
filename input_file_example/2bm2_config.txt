@@ -4,9 +4,9 @@ out = ./2bm2_out.pdbqt
 center_x = 40.415
 center_y = 110.986
 center_z = 82.673
-size_x = 30
-size_y = 30
-size_z = 30
-thread = 1000
+size_x = 25
+size_y = 25
+size_z = 25
+thread = 8000
 
 	
