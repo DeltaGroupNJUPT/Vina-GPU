@@ -3,6 +3,7 @@
 //#define DISPLAY_SUCCESS
 //#define DISPLAY_ADDITION_INFO
 
+//https://stackoverflow.com/questions/24326432/convenient-way-to-show-opencl-error-codes
 const char* getErrorString(cl_int error)
 {
     switch (error) {
