@@ -600,6 +600,11 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 																	0, NULL, NULL, &err); checkErr(err);
 
 	std::vector<output_type> result_vina = cl_to_vina(result_ptr, thread);
+	// if empty, something goes wrong in the device part
+	if (result_vina.size() == 0) {
+		printf("\nError in the device part"); exit(-1);
+	}
+
 
 	// Unmaping result data
 	err = clEnqueueUnmapMemObject(queue, results, result_ptr, 0, NULL, NULL); checkErr(err);
