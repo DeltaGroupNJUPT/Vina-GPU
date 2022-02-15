@@ -57,17 +57,17 @@ void get_heavy_atom_movable_coords( output_type_cl* tmp, const m_cl* m_cl_gpu) {
 //}
 
 
-void add_to_output_container(out_container* out, const output_type_cl* tmp) {
-	if (out->current_size <= MAX_CONTAINER_SIZE_EVERY_WI) {
-		out->container[out->current_size - 1] = *tmp;
-		out->current_size++;
-		container_sort(out);
-	}
-	else {
-		out->container[MAX_CONTAINER_SIZE_EVERY_WI - 1] = *tmp;
-		container_sort(out);
-	}
-}
+//void add_to_output_container(out_container* out, const output_type_cl* tmp) {
+//	if (out->current_size <= MAX_CONTAINER_SIZE_EVERY_WI) {
+//		out->container[out->current_size - 1] = *tmp;
+//		out->current_size++;
+//		container_sort(out);
+//	}
+//	else {
+//		out->container[MAX_CONTAINER_SIZE_EVERY_WI - 1] = *tmp;
+//		container_sort(out);
+//	}
+//}
 
 //Generate a random number according to step
 float generate_n(__constant float* pi_map, const int step) {
@@ -119,7 +119,6 @@ void kernel2(	__global	m_cl*			m_cl_global,
 	int gs = get_global_size(0);
 	int gl = get_global_linear_id();
 
-
 	float best_e = INFINITY;
 
 	for (int gll = gl;
@@ -133,14 +132,14 @@ void kernel2(	__global	m_cl*			m_cl_global,
 		m_cl_init_with_m_cl(m_cl_global, &m_cl_gpu);
 
 
-		__private output_type_cl tmp; // private memory, shared only in work item
-		__private change_cl g;
+		output_type_cl tmp; // private memory, shared only in work item
+		change_cl g;
 		output_type_cl_init(&tmp, rand_molec_struc_vec_gpu + gll * (SIZE_OF_MOLEC_STRUC / sizeof(float)));
 		g.lig_torsion_size = tmp.lig_torsion_size;
 		// BFGS
 		output_type_cl best_out;
 		output_type_cl candidate;
-
+			
 		for (int step = 0; step < search_depth; step++) {
 			output_type_cl_init_with_output(&candidate, &tmp);
 
@@ -176,7 +175,7 @@ void kernel2(	__global	m_cl*			m_cl_global,
 
 				output_type_cl_init_with_output(&tmp, &candidate);
 
-				set(&tmp, &m_cl_gpu.ligand.rigid, m_cl_gpu.m_coords.coords,
+				set(&tmp, &m_cl_gpu.ligand.rigid, &m_cl_gpu.m_coords,
 					m_cl_gpu.atoms, m_cl_gpu.m_num_movable_atoms, epsilon_fl);
 				
 				if (tmp.e < best_e) {
@@ -191,7 +190,7 @@ void kernel2(	__global	m_cl*			m_cl_global,
 					);
 					// set
 					if (tmp.e < best_e) {
-						set(&tmp, &m_cl_gpu.ligand.rigid, m_cl_gpu.m_coords.coords,
+						set(&tmp, &m_cl_gpu.ligand.rigid, &m_cl_gpu.m_coords,
 							m_cl_gpu.atoms, m_cl_gpu.m_num_movable_atoms, epsilon_fl);
 
 						output_type_cl_init_with_output(&best_out, &tmp);
@@ -206,6 +205,8 @@ void kernel2(	__global	m_cl*			m_cl_global,
 
 		// write the best conformation back to CPU
 		write_back(&results[gll], &best_out);
+
+
 		//if (gll % 100 == 0)printf("\nThread %d FINISH", gll);
 	}
 }

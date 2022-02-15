@@ -7,7 +7,7 @@ typedef struct {
 void matrix_init(matrix* m, int dim, float fill_data) {
 	m->dim = dim;
 	if ((dim * (dim + 1) / 2) > MAX_HESSIAN_MATRIX_SIZE)printf("\nnmatrix: matrix_init() ERROR!");
-	((dim * (dim + 1) / 2)*sizeof(float)); // symmetric matrix
+	//((dim * (dim + 1) / 2)*sizeof(float)); // symmetric matrix
 	for (int i = 0; i < (dim * (dim + 1) / 2); i++)m->data[i] = fill_data;
 	for (int i = (dim * (dim + 1) / 2); i < MAX_HESSIAN_MATRIX_SIZE; i++)m->data[i] = 0;// Others will be 0
 }

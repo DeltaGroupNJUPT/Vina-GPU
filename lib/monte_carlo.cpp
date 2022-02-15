@@ -399,9 +399,28 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 			ig_cl_ptr->grids[i].m_j = tmp_grids[i].m_data.dim1(); assert(MAX_NUM_OF_GRID_MJ >= ig_cl_ptr->grids[i].m_j);
 			ig_cl_ptr->grids[i].m_k = tmp_grids[i].m_data.dim2(); assert(MAX_NUM_OF_GRID_MK >= ig_cl_ptr->grids[i].m_k);
 
-			for (int j = 0; j < ig_cl_ptr->grids[i].m_i * ig_cl_ptr->grids[i].m_j * ig_cl_ptr->grids[i].m_k; j++) {
-				ig_cl_ptr->grids[i].m_data[j] = tmp_grids[i].m_data.m_data[j];
-			}
+			//for (int j = 0; j < ig_cl_ptr->grids[i].m_i * ig_cl_ptr->grids[i].m_j * ig_cl_ptr->grids[i].m_k; j++) {
+			//	ig_cl_ptr->grids[i].m_data[j] = tmp_grids[i].m_data.m_data[j];
+			//}
+
+			int m_i = tmp_grids[i].m_data.dim0();
+			int m_j = tmp_grids[i].m_data.dim1();
+			int m_k = tmp_grids[i].m_data.dim2();
+			for (sz idx0 = 0; idx0 < m_i - 1; idx0++)
+				for (sz idx1 = 0; idx1 < m_j - 1; idx1++)
+					for (sz idx2 = 0; idx2 < m_k - 1; idx2++) {
+						int base = (idx0 + m_i * (idx1 + m_j * idx2)) * 8;
+						ig_cl_ptr->grids[i].m_data[base] = tmp_grids[i].m_data(idx0, idx1, idx2); // f000
+						ig_cl_ptr->grids[i].m_data[base + 1] = tmp_grids[i].m_data(idx0 + 1, idx1, idx2); // f100
+						ig_cl_ptr->grids[i].m_data[base + 2] = tmp_grids[i].m_data(idx0, idx1 + 1, idx2); // f010
+						ig_cl_ptr->grids[i].m_data[base + 3] = tmp_grids[i].m_data(idx0 + 1, idx1 + 1, idx2); // f110
+						ig_cl_ptr->grids[i].m_data[base + 4] = tmp_grids[i].m_data(idx0, idx1, idx2 + 1); // f001
+						ig_cl_ptr->grids[i].m_data[base + 5] = tmp_grids[i].m_data(idx0 + 1, idx1, idx2 + 1); // f101
+						ig_cl_ptr->grids[i].m_data[base + 6] = tmp_grids[i].m_data(idx0, idx1 + 1, idx2 + 1); // f011
+						ig_cl_ptr->grids[i].m_data[base + 7] = tmp_grids[i].m_data(idx0 + 1, idx1 + 1, idx2 + 1); // f111
+					}
+
+		
 		}
 		else {
 			ig_cl_ptr->grids[i].m_i = 0;
@@ -567,13 +586,16 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	/****************************   Start kernel    ***************************/
 	/**************************************************************************/
 	size_t global_size[2] = {512, 32 };
-	size_t local_size[2] = { 16,8 };
+	size_t local_size[2] = { 16,2 };
 	cl_event monte_clarlo_cl;
 	err = clEnqueueNDRangeKernel(queue, kernels[0], 2, 0, global_size, local_size, 0, NULL, &monte_clarlo_cl); checkErr(err);
 
 	clWaitForEvents(1, &monte_clarlo_cl);
 
+	finished = true;
+	console_thread.join(); // wait the thread finish
 
+	//getchar();
 
 	// Maping result data
  	output_type_cl* result_ptr = (output_type_cl*)clEnqueueMapBuffer(queue, results, CL_TRUE, CL_MAP_READ, 
@@ -581,6 +603,11 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 																	0, NULL, NULL, &err); checkErr(err);
 
 	std::vector<output_type> result_vina = cl_to_vina(result_ptr, thread);
+	// if empty, something goes wrong in the device part
+	if (result_vina.size() == 0) {
+		printf("Error in the device part\n"); exit(-1);
+	}
+
 
 	// Unmaping result data
 	err = clEnqueueUnmapMemObject(queue, results, result_ptr, 0, NULL, NULL); checkErr(err);
@@ -609,23 +636,15 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	free(rand_maps);
 	for (int i = 0; i < thread; i++)free(rand_molec_struc_vec[i]);
 
-	finished = true;
-	console_thread.join(); // wait the thread finish
+
 
 	// Output Analysis
-	//cl_ulong time_start, time_end;
-	//double total_time;
-	//err = clGetEventProfilingInfo(monte_clarlo_cl, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL); checkErr(err);
-	//err = clGetEventProfilingInfo(monte_clarlo_cl, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL); checkErr(err);
-	//total_time = time_end - time_start;
-	//printf("\nGPU monte carlo runtime = %0.1f s\n", (total_time / 1000000000.0));
-
-	//std::ofstream file("gpu_runtime.txt");
-	//if (file.is_open())
-	//{
-	//	file << "GPU monte carlo runtime = " << (double)(total_time / 1000000000.0) << " s" << std::endl;
-	//	file.close();
-	//}
+	cl_ulong time_start, time_end;
+	double total_time;
+	err = clGetEventProfilingInfo(monte_clarlo_cl, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL); checkErr(err);
+	err = clGetEventProfilingInfo(monte_clarlo_cl, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL); checkErr(err);
+	total_time = time_end - time_start;
+	printf("GPU monte carlo runtime: %0.3f s", (total_time / 1000000000.0));
 
 #ifdef DISPLAY_ANALYSIS
 	// Output Analysis
@@ -634,7 +653,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	err = clGetEventProfilingInfo(monte_clarlo_cl, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL); checkErr(err);
 	err = clGetEventProfilingInfo(monte_clarlo_cl, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL); checkErr(err);
 	total_time = time_end - time_start;
-	printf("\n GPU monte carlo runtime = %0.16f s\n", (total_time / 1000000000.0));
+	printf("\nGPU monte carlo runtime = %0.3f s\n", (total_time / 1000000000.0));
 
 	std::ofstream file("gpu_runtime.txt");
 	if (file.is_open())
@@ -645,14 +664,14 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 
 	cl_ulong private_mem_size;
 	err = clGetKernelWorkGroupInfo(kernels[0], devices[0], CL_KERNEL_PRIVATE_MEM_SIZE, sizeof(cl_ulong), &private_mem_size, NULL); checkErr(err);
-	printf("\n private mem used = %f KBytes", (double)private_mem_size / 1024);
+	printf("\nprivate mem used = %f KBytes", (double)private_mem_size / 1024);
 
 	cl_ulong local_mem_size;
 	err = clGetKernelWorkGroupInfo(kernels[0], devices[0], CL_KERNEL_LOCAL_MEM_SIZE, sizeof(cl_ulong), &local_mem_size, NULL); checkErr(err);
-	printf("\n local mem used = %d Bytes", (int)local_mem_size);
+	printf("\nlocal mem used = %d Bytes", (int)local_mem_size);
 
-	printf("\n constant mem used = %0.3f MBytes \n", (double)(	p_cl_size + ig_cl_size + thread * SIZE_OF_MOLEC_STRUC) / (1024 * 1024));
+	printf("\nconstant mem used = %0.3f MBytes \n", (double)(	p_cl_size + ig_cl_size + thread * SIZE_OF_MOLEC_STRUC) / (1024 * 1024));
 #endif
-
+	//getchar();
 }
 #endif // OPENCL_VERSION

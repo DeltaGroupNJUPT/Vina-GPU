@@ -1,6 +1,6 @@
 void quaternion_increment(float* q, const float* rotation, float epsilon_fl);
 void normalize_angle(float* x);
-inline void output_type_cl_init(output_type_cl* out, __constant float* ptr) {
+ void output_type_cl_init(output_type_cl* out, __constant float* ptr) {
 	for (int i = 0; i < 3; i++)out->position[i] = ptr[i];
 	for (int i = 0; i < 4; i++)out->orientation[i] = ptr[i + 3];
 	for (int i = 0; i < MAX_NUM_OF_LIG_TORSION; i++)out->lig_torsion[i] = ptr[i + 3 + 4];
@@ -9,7 +9,7 @@ inline void output_type_cl_init(output_type_cl* out, __constant float* ptr) {
 	//did not assign coords and e
 }
 
-inline void output_type_cl_init_with_output(output_type_cl* out_new, const output_type_cl* out_old) {
+ void output_type_cl_init_with_output(output_type_cl* out_new, const output_type_cl* out_old) {
 	for (int i = 0; i < 3; i++)out_new->position[i] = out_old->position[i];
 	for (int i = 0; i < 4; i++)out_new->orientation[i] = out_old->orientation[i];
 	for (int i = 0; i < MAX_NUM_OF_LIG_TORSION; i++)out_new->lig_torsion[i] = out_old->lig_torsion[i];
@@ -36,11 +36,11 @@ void output_type_cl_increment(output_type_cl* x, const change_cl* c, float facto
 	}
 }
 
-inline float norm3(const float* a) {
+ float norm3(const float* a) {
 	return sqrt(pown(a[0], 2) + pown(a[1], 2) + pown(a[2], 2));
 }
 
-inline void normalize_angle(float* x) {
+ void normalize_angle(float* x) {
 	while (1) {
 		if (*x >= -(M_PI) && *x <= (M_PI)) {
 			break;
@@ -65,13 +65,13 @@ inline void normalize_angle(float* x) {
 	}
 }
 
-inline bool quaternion_is_normalized(float* q) {
+ bool quaternion_is_normalized(float* q) {
 	float q_pow = pown(q[0], 2) + pown(q[1], 2) + pown(q[2], 2) + pown(q[3], 2);
 	float sqrt_q_pow = sqrt(q_pow);
 	return (q_pow - 1 < 0.001) && (sqrt_q_pow - 1 < 0.001);
 }
 
-inline void angle_to_quaternion(float* q, const float* rotation, float epsilon_fl) {
+ void angle_to_quaternion(float* q, const float* rotation, float epsilon_fl) {
 	float angle = norm3(rotation);
 	if (angle > epsilon_fl) {
 		float axis[3] = { rotation[0] / angle, rotation[1] / angle ,rotation[2] / angle };
@@ -87,7 +87,7 @@ inline void angle_to_quaternion(float* q, const float* rotation, float epsilon_f
 }
 
 // quaternion multiplication
-inline void angle_to_quaternion_multi(float* qa, const float* qb) {
+ void angle_to_quaternion_multi(float* qa, const float* qb) {
 	float tmp[4] = { qa[0],qa[1],qa[2],qa[3] };
 	qa[0] = tmp[0] * qb[0] - tmp[1] * qb[1] - tmp[2] * qb[2] - tmp[3] * qb[3];
 	qa[1] = tmp[0] * qb[1] + tmp[1] * qb[0] + tmp[2] * qb[3] - tmp[3] * qb[2];
@@ -95,7 +95,7 @@ inline void angle_to_quaternion_multi(float* qa, const float* qb) {
 	qa[3] = tmp[0] * qb[3] + tmp[1] * qb[2] - tmp[2] * qb[1] + tmp[3] * qb[0];
 }
 
-inline void quaternion_normalize_approx(float* q, float epsilon_fl) {
+ void quaternion_normalize_approx(float* q, float epsilon_fl) {
 	const float s = pown(q[0], 2) + pown(q[1], 2) + pown(q[2], 2) + pown(q[3], 2);
 	// Omit one assert()
 	if (fabs(s - 1) < TOLERANCE)
@@ -117,7 +117,7 @@ void quaternion_increment(float* q, const float* rotation, float epsilon_fl) {
 }
 
 
-inline float vec_distance_sqr(float* a, float* b) {
+ float vec_distance_sqr(float* a, float* b) {
 	return pown(a[0] - b[0], 2) + pown(a[1] - b[1], 2) + pown(a[2] - b[2], 2);
 }
 

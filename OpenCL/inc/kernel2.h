@@ -129,7 +129,7 @@ typedef struct {
 	int m_i;
 	int m_j;
 	int m_k;
-	float m_data [(MAX_NUM_OF_GRID_MI) * (MAX_NUM_OF_GRID_MJ) * (MAX_NUM_OF_GRID_MK)];
+	float m_data [(MAX_NUM_OF_GRID_MI) * (MAX_NUM_OF_GRID_MJ) * (MAX_NUM_OF_GRID_MK) * 8];
 } grid_cl;
 
 typedef struct {

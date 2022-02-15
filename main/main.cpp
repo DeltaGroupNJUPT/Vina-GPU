@@ -312,8 +312,10 @@ void main_procedure(model& m, const boost::optional<model>& ref, // m is non-con
 		assert(search_depth >= 1);
 	}
 	else {
-		par.mc.search_depth = (int) (0.24 * m.num_movable_atoms() + 0.29 * m.get_size().num_degrees_of_freedom() - 5.74);
-		if (par.mc.search_depth < 1) par.mc.search_depth = 1;
+		//par.mc.search_depth = (int) (0.24 * m.num_movable_atoms() + 0.29 * m.get_size().num_degrees_of_freedom() - 5.74);
+		double tmp_steps = (0.24 * m.num_movable_atoms() + 0.29 * m.get_size().ligands[0] - 3.41);
+		if (tmp_steps < 1) tmp_steps = 1;
+		par.mc.search_depth = (int)tmp_steps;
 	}
 	//std::cout << "Search depth is set to " << par.mc.search_depth << std::endl;
 	par.mc.thread = thread;// 20210811 Glinttsd
@@ -740,6 +742,6 @@ Thank you!\n";
 	//	file.close();
 	//}
 
-	std::cout << "Vina-GPU total runtime = " << (double)(end - start) / CLOCKS_PER_SEC << " s" << std::endl;
+	std::cout << "Vina-GPU total runtime: " << (double)(end - start) / CLOCKS_PER_SEC << " s" << std::endl;
 	//getchar();
 }
