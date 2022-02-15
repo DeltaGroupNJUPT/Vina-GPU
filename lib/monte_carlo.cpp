@@ -605,7 +605,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	std::vector<output_type> result_vina = cl_to_vina(result_ptr, thread);
 	// if empty, something goes wrong in the device part
 	if (result_vina.size() == 0) {
-		printf("\nError in the device part"); exit(-1);
+		printf("Error in the device part\n"); exit(-1);
 	}
 
 
