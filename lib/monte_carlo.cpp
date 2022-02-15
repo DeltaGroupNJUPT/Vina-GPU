@@ -592,6 +592,9 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 
 	clWaitForEvents(1, &monte_clarlo_cl);
 
+	finished = true;
+	console_thread.join(); // wait the thread finish
+
 	//getchar();
 
 	// Maping result data
@@ -633,8 +636,7 @@ void monte_carlo::operator()(model& m, output_container& out, const precalculate
 	free(rand_maps);
 	for (int i = 0; i < thread; i++)free(rand_molec_struc_vec[i]);
 
-	finished = true;
-	console_thread.join(); // wait the thread finish
+
 
 	// Output Analysis
 	cl_ulong time_start, time_end;
