@@ -371,7 +371,7 @@ void SetupBuildProgramWithSource(cl_program program_cl, cl_program program_head,
 
     
     //Build program
-    err = clBuildProgram(program_cl, 1, devices, options, NULL, NULL); checkErr(err);
+    err = clBuildProgram(program_cl, 1, devices, options, NULL, NULL);
     if (CL_SUCCESS != err) {
         printf("\nError: Failed to build program executable!");
         char* buffer;
