@@ -32,6 +32,7 @@ A graphic user interface (GUI) is also provided for Windows users, please check 
 
 Note: ensure the line ending are CLRF
 ### Linux
+**Note**: At least 8M stack size is needed. To change the stack size, use `ulimit -s 8192`.
 1. install [boost library](https://www.boost.org/) (current version is 1.77.0)
 2. install [CUDA Toolkit](https://developer.nvidia.com/zh-cn/cuda-toolkit) (current version is 11.5) if you are using NVIDIA GPU cards
 
