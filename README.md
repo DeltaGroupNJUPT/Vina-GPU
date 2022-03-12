@@ -40,7 +40,7 @@ Note: ensure the line ending are CLRF
 3. change the `BOOST_LIB_PATH` and `OPENCL_LIB_PATH` accordingly in `Makefile`
 4. set GPU platform `GPU_PLATFORM` and OpenCL version `OPENCL_VERSION`in `Makefile`. some options are given below:
 
-	**note: -DOPENCL_3_0 is highly recommended in Linux**
+	**Note**: -DOPENCL_3_0 is highly recommended in Linux. To check the OpenCL version on a given platform, use `clinfo`.
 	
 |Macros|Options|Descriptions|
 |--|--|--|	
