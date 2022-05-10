@@ -92,6 +92,6 @@ A graphic user interface (GUI) is provided for users on **Windows** OS
 5. set the box center, the box size, thread and search_depth
 6. click the `start` button to run Vina-GPU
 ## Citation
-* Shidi, Tang, Chen Ruiqi, Lin Mengru, Lin Qingde, Zhu Yanxiang, Wu Jiansheng, Hu Haifeng, and Ling Ming. "Accelerating AutoDock VINA with GPUs." ChemRxiv (2021). ), doi: 10.33774/chemrxiv-2021-3qvn2-v2
+* Tang, S.; Chen, R.; Lin, M.; Lin, Q.; Zhu, Y.; Ding, J.; Hu, H.; Ling, M.; Wu, J. Accelerating AutoDock Vina with GPUs. Molecules 2022, 27, 3041. https://doi.org/10.3390/molecules27093041
 
 * O. Trott, A. J. Olson, AutoDock Vina: improving the speed and accuracy of docking with a new scoring function, efficient optimization and multithreading, Journal of Computational Chemistry 31 (2010) 455-461.
