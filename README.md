@@ -5,6 +5,10 @@
 A heterogeneous OpenCL implementation of AutoDock Vina
 
 A CUDA version of Vina-GPU is avaliable at [here](https://github.com/Glinttsd/Vina-GPU-CUDA)
+
+**Update:** [Vina-GPU+](https://github.com/DeltaGroupNJUPT/Vina-GPU-2.0/tree/main/Vina-GPU%2B): an virtual-screening-accelerated version of Vina-GPU is released together with our [Vina-GPU 2.0 toolkit](https://github.com/DeltaGroupNJUPT/Vina-GPU-2.0)
+
+
 ## Compiling and Running
 **Note**: at least one GPU card is required and make sure the version of GPU driver is up to date
 ### Windows
